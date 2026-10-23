@@ -1,0 +1,52 @@
+# Instrucciones para trabajar en este proyecto
+
+## Alcance y arquitectura
+
+- Este repositorio es un backoffice nuevo; no modificar el entorno PHP/MySQL anterior.
+- Backend: NestJS 11 sobre Express, Node.js 24 y TypeScript.
+- Frontend: Next.js 16 / React 19, Tailwind CSS 4 y TypeScript.
+- Conservar las ramas de versiones elegidas salvo una actualización explícita y probada.
+- No crear un servidor Express adicional ni conectar el navegador directamente a una base de datos.
+- El navegador usa `/api`; Next.js reenvía a `http://backend:3001/api`.
+
+## Documentación
+
+Antes de modificar, consulta `docs/README.md`, `docs/arquitectura.md` y `docs/buenas-practicas.md`.
+Consulta `docs/docker.md` al cambiar servicios, puertos, builds o dependencias.
+Consulta `docs/api.md` al añadir o modificar endpoints.
+Mantén la documentación afectada en el mismo cambio que el código.
+Guarda notas provisionales solo en `.local/`; traslada las decisiones duraderas a `docs/`.
+
+## Código y comentarios
+
+- Documenta cada función, método y constructor nuevo o modificado con JSDoc/TSDoc.
+- Explica propósito, parámetros, resultado, errores y efectos relevantes; evita comentarios obvios.
+- Mantén controladores delgados y lógica de negocio en servicios.
+- Usa DTO y validación para datos de entrada; verifica datos externos en el frontend.
+- No uses `any` ni silencios de tipos como solución rápida a errores.
+- Usa Tailwind 4 con `@tailwindcss/postcss`; no copies instrucciones de Tailwind 3 sin adaptación.
+- Al usar documentación incluida en dependencias, comprueba que corresponda a la versión instalada.
+
+## Dependencias y Docker
+
+- Los `package-lock.json` son parte del proyecto: generarlos, revisar y versionar.
+- No sustituir `npm ci` por instalaciones no reproducibles en las imágenes compiladas.
+- No instalar dependencias globales en el equipo como requisito del proyecto.
+- Los cambios de dependencias deben actualizar el manifiesto y el lockfile juntos.
+- No ejecutar instalaciones concurrentes sobre el mismo volumen `node_modules`.
+- Las comprobaciones dentro de un contenedor requieren permisos y herramientas disponibles.
+
+## Seguridad
+
+- No introducir secretos en código, imágenes, documentación ni variables `NEXT_PUBLIC_*`.
+- No añadir acceso a producción, migraciones ni datos reales sin autorización expresa.
+- No borrar volúmenes ni ejecutar limpiezas globales de Docker.
+- No desactivar controles de seguridad para ocultar errores de configuración.
+- Swagger solo está habilitado por defecto en desarrollo.
+- Estas instrucciones no son una barrera de permisos: conservar aislamiento y privilegios mínimos.
+
+## Antes de finalizar
+
+Ejecuta las comprobaciones aplicables documentadas en `docs/docker.md`.
+Resume archivos modificados, pruebas realizadas, resultado y cualquier comprobación pendiente.
+No afirmes que Docker, npm, una compilación o un navegador han funcionado si no se ejecutaron.

@@ -1,0 +1,121 @@
+# Desarrollo local del módulo del CRM: NestJS + Next.js + MySQL 5.7.21 + Adminer.
+# No combinar con docker-compose.prod.yml. No es una migración del CRM original.
+# Usar una copia autorizada del esquema y los datos del CRM, no producción.
+# MYSQL_DATABASE debe identificar la base local en la que se restaurará esa copia.
+# El esquema y los datos deben importarse por separado: este archivo no los contiene.
+# Volumen independiente: no reutilizar el directorio de datos de MySQL 8.x.
+# No cambiar COMPOSE_PROJECT_NAME ni eliminar volúmenes durante esta sustitución.
+name: ${COMPOSE_PROJECT_NAME:-backoffice}
+
+services:
+  backend:
+    build:
+      context: ./backend
+      target: development
+    init: true
+    environment:
+      NODE_ENV: development
+      PORT: "3001"
+      ENABLE_SWAGGER: "true"
+      # Variables preparadas para el futuro módulo de base de datos de NestJS.
+      # Añadirlas NO establece por sí solo una conexión desde la aplicación.
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: ${MYSQL_DATABASE:?Define MYSQL_DATABASE en .env}
+      DB_USER: ${MYSQL_USER:?Define MYSQL_USER en .env}
+      DB_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-3001}:3001"
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+      - backend_dist:/app/dist
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # Comprueba la API actual, no una conexión a MySQL desde NestJS.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health', { signal: AbortSignal.timeout(4000) }).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
+
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    init: true
+    environment:
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: "1"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+      - frontend_next:/app/.next
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health', { signal: AbortSignal.timeout(4000) }).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
+
+  db:
+    # Versión exacta requerida por el CRM. No sustituir por mysql:5.7 ni latest.
+    # Comprobar su descarga con: docker compose pull db
+    image: mysql:5.7.21
+    platform: linux/amd64
+    # Solo en desarrollo: no ejecutar automáticamente eventos SQL importados.
+    # No desactiva triggers ni otras integraciones de la aplicación.
+    command: ["--event-scheduler=DISABLED"]
+    restart: unless-stopped
+    environment:
+      # Inicialización de una base local vacía; las credenciales son de desarrollo.
+      # Estas variables NO conectan al servidor original del CRM.
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Define MYSQL_DATABASE en .env}
+      MYSQL_USER: ${MYSQL_USER:?Define MYSQL_USER en .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env}
+    ports:
+      # Acceso opcional desde un cliente MySQL en Windows: 127.0.0.1:3307.
+      # Dentro de Docker el puerto sigue siendo 3306.
+      - "127.0.0.1:${MYSQL_PORT:-3307}:3306"
+    volumes:
+      - crm_mysql5721_data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mysql --protocol=TCP --host=127.0.0.1
+          --user="$${MYSQL_USER}" --password="$${MYSQL_PASSWORD}"
+          --database="$${MYSQL_DATABASE}" --execute="SELECT 1"
+          >/dev/null 2>&1
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # Herramienta web local para administrar MySQL; no forma parte del backoffice.
+  adminer:
+    image: adminer:5
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${ADMINER_PORT:-8082}:8080"
+
+volumes:
+  backend_node_modules:
+  backend_dist:
+  frontend_node_modules:
+  frontend_next:
+  crm_mysql5721_data:

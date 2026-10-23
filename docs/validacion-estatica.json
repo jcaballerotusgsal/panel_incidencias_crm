@@ -1,0 +1,176 @@
+{
+  "date": "2026-10-14",
+  "scope": "Static validation only. No Docker daemon or npm registry connectivity available.",
+  "typescript_parser_version": "5.8.3",
+  "code_checks": [
+    {
+      "file": "backend/docker/dev-entrypoint.sh",
+      "check": "Shell syntax",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "backend/src/app.controller.ts",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "backend/src/app.module.ts",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "backend/src/health/health.controller.ts",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "backend/src/health/health.module.ts",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "backend/src/health/health.service.ts",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "backend/src/main.ts",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "backend/test/health.test.cjs",
+      "check": "JS syntax",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "frontend/docker/dev-entrypoint.sh",
+      "check": "Shell syntax",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "frontend/eslint.config.mjs",
+      "check": "JS syntax",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "frontend/next.config.ts",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "frontend/postcss.config.mjs",
+      "check": "JS syntax",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "frontend/scripts/smoke.mjs",
+      "check": "JS syntax",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "frontend/src/app/health/route.ts",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "frontend/src/app/layout.tsx",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "frontend/src/app/page.tsx",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "frontend/src/components/api-status.tsx",
+      "check": "TypeScript transpilation + JS syntax (not typecheck)",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "file": "frontend/next.config.ts",
+      "check": "Proxy destination, standalone and dev-only polling evaluated",
+      "ok": true
+    },
+    {
+      "file": "frontend/src/components/api-status.tsx",
+      "check": "Browser uses relative API URL",
+      "ok": true
+    }
+  ],
+  "configuration_checks": [
+    {
+      "file": "backend/tsconfig.json",
+      "check": "JSON parse",
+      "ok": true
+    },
+    {
+      "file": "backend/package.json",
+      "check": "JSON parse",
+      "ok": true
+    },
+    {
+      "file": "backend/nest-cli.json",
+      "check": "JSON parse",
+      "ok": true
+    },
+    {
+      "file": "backend/tsconfig.build.json",
+      "check": "JSON parse",
+      "ok": true
+    },
+    {
+      "file": "frontend/tsconfig.json",
+      "check": "JSON parse",
+      "ok": true
+    },
+    {
+      "file": "frontend/package.json",
+      "check": "JSON parse",
+      "ok": true
+    },
+    {
+      "file": "docker-compose.yml",
+      "check": "YAML + build contexts + targets + dependencies + mounts + loopback ports",
+      "ok": true
+    },
+    {
+      "file": "docker-compose.prod.yml",
+      "check": "YAML + build contexts + targets + dependencies + mounts + loopback ports",
+      "ok": true
+    },
+    {
+      "file": "project",
+      "check": "Dependency policy, development bootstrap and production lockfile requirement",
+      "ok": true
+    }
+  ],
+  "not_executed": [
+    "npm dependency resolution/install",
+    "Full TypeScript typecheck",
+    "Next.js or NestJS build",
+    "ESLint with actual dependencies",
+    "Backend HTTP tests",
+    "Real smoke test through Docker networking",
+    "Browser tests",
+    "Production Docker image build and start"
+  ]
+}

@@ -1,0 +1,14 @@
+**/node_modules/
+**/.next/
+**/dist/
+**/coverage/
+**/*.tsbuildinfo
+/.local/*
+!/.local/.gitkeep
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+# Los package-lock.json NO se ignoran: incorporarlos a Git tras generarlos.
