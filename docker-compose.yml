@@ -17,8 +17,8 @@ services:
       NODE_ENV: development
       PORT: "3001"
       ENABLE_SWAGGER: "true"
-      # Variables preparadas para el futuro módulo de base de datos de NestJS.
-      # Añadirlas NO establece por sí solo una conexión desde la aplicación.
+      # Pool de lectura de NestJS para consultar la copia local del CRM.
+      # No inicializa, sincroniza ni modifica el esquema existente.
       DB_HOST: db
       DB_PORT: "3306"
       DB_NAME: ${MYSQL_DATABASE:?Define MYSQL_DATABASE en .env}

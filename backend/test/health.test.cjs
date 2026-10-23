@@ -20,7 +20,7 @@ after(async () => { if (app) await app.close(); });
 test('HealthService devuelve un contrato de salud válido', () => {
   const health = new HealthService().getStatus();
   assert.equal(health.status, 'ok');
-  assert.equal(health.database, 'not-configured');
+  assert.equal(health.database, 'not-checked');
   assert.ok(Number.isFinite(Date.parse(health.timestamp)));
   assert.ok(health.uptimeSeconds >= 0);
 });

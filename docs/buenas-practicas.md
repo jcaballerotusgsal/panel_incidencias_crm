@@ -33,7 +33,7 @@ Los puertos publicados se limitan a loopback por defecto. No expongas el modo de
 
 CORS no es un sistema de autenticación. El proxy de Next.js tampoco lo es.
 
-Las credenciales de una futura base de datos permanecerán en el backend. No las incluyas en variables `NEXT_PUBLIC_*`, en el repositorio ni en capas de imágenes Docker.
+Las credenciales MySQL permanecen en el backend mediante `DB_*`. No las incluyas en variables `NEXT_PUBLIC_*`, en el repositorio ni en capas de imágenes Docker.
 
 ## Dependencias
 

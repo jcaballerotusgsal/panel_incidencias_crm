@@ -1,6 +1,6 @@
 # Arquitectura
 
-## Dos servicios, no seis
+## Aplicaciones y servicios locales
 
 ```text
 Navegador
@@ -13,10 +13,10 @@ frontend:3000
 backend:3001
     Node.js + NestJS + Express
     │
-    └── Base de datos: todavía no configurada
+    └── db:3306 · MySQL 5.7.21 · copia local del CRM
 ```
 
-NestJS es el framework de la API y usa el adaptador `@nestjs/platform-express`. Node.js ejecuta el backend y también el servidor Next.js. React construye la interfaz; Tailwind genera estilos durante desarrollo/compilación. No se requiere un contenedor dedicado para Express, React o Tailwind.
+NestJS es el framework de la API y usa el adaptador `@nestjs/platform-express`. Node.js ejecuta el backend y también el servidor Next.js. React construye la interfaz; Tailwind genera estilos durante desarrollo/compilación. No se requiere un contenedor dedicado para Express, React o Tailwind. El Compose de desarrollo incluye además MySQL 5.7.21 y Adminer como herramienta local de administración.
 
 ## Rutas y comunicación
 
@@ -30,25 +30,25 @@ La regla de proxy no incorpora autenticación. Cualquier endpoint de NestJS situ
 
 ## Responsabilidades
 
-En el backend, cada dominio de negocio debe tener su módulo, controladores, servicios y DTO. Los controladores gestionan el contrato HTTP; los servicios contienen las reglas de negocio. La capa de acceso a datos se añadirá cuando se decida la base de datos.
+En el backend, cada dominio de negocio tiene su módulo, controladores, servicios y DTO. `IncidenciasModule` valida la entrada y exige código e identificador antes de devolver una fila; el repositorio enumera las columnas y parametriza la consulta. Un `LEFT JOIN` por `crm_incidencia.m_linea = crm_lineas_tusgsal_amb.id_linea_amb` añade `nom_linea_tusgsal`, con cardinalidad máxima de una correspondencia por la clave primaria del catálogo. `DatabaseModule` mantiene un pool `mysql2` con credenciales `DB_*`, tiempos de espera y cierre de conexiones. No crea objetos ni ejecuta migraciones.
 
-En el frontend, `src/app/` contiene rutas y layouts; `src/components/` contiene componentes reutilizables. La pantalla de ejemplo usa un Client Component para comprobar la API con `fetch('/api/health')`.
+En el frontend, `src/app/` contiene rutas y layouts; `src/components/` contiene componentes reutilizables. El formulario de inicio envía código e identificador a `POST /api/incidencias/consulta`, verifica el contrato JSON y navega a `/incidencias/resultado`. La ficha muestra 20 campos mediante una lista explícita de presentación: código, detalle, información de la incidencia, contacto, acontecimiento y fechas del registro. «Línea» presenta `nom_linea_tusgsal` en lugar del id. Los ocho campos excluidos se documentan en [reglas-negocio.md](base-de-datos/reglas-negocio.md); la respuesta API conserva las 28 columnas originales y añade el nombre de línea (29 propiedades). La presentación usa etiquetas legibles, fechas sin conversión de zona horaria y «No informado» para valores ausentes. Un contexto de React conserva el resultado solo en memoria, sin datos en la URL, cookies ni almacenamiento persistente. Recargar exige consultar de nuevo. El componente de ejemplo `ApiStatus` se conserva, aunque no se muestra en la página inicial.
 
 `/health` en Next.js comprueba la vida del servidor web. `/api/health` comprueba el proceso NestJS. Ninguno comprueba SQL, correo, colas ni otras dependencias externas.
 
 ## Almacenamiento y separación del entorno antiguo
 
-Los volúmenes de desarrollo contienen exclusivamente dependencias, compilados o caché:
+Los volúmenes de las aplicaciones contienen dependencias, compilados o caché:
 
 - `backend_node_modules`
 - `backend_dist`
 - `frontend_node_modules`
 - `frontend_next`
 
-No hay MySQL, SQL Server, Adminer ni otro servicio de persistencia en esta plantilla. No se accede a los volúmenes ni servicios del entorno MOP31 anterior.
+El volumen independiente `crm_mysql5721_data` conserva la copia local del CRM en MySQL 5.7.21. La incorporación de la consulta no importa datos, modifica objetos ni accede al entorno PHP original. La procedencia y los límites de la revisión están en [base-de-datos/README.md](base-de-datos/README.md).
 
 ## Producción
 
 El modo compilado genera imágenes sin bind mounts del código y las ejecuta como usuario `node`. El frontend usa la salida standalone de Next.js. El backend no publica un puerto en el host en ese modo.
 
-Esto no constituye un backoffice empresarial terminado: faltan autenticación, autorización, HTTPS, gestión de secretos, conexión a datos, observabilidad, copia de seguridad de futuros datos y revisión de seguridad del despliegue.
+El Compose compilado no configura una base de datos: conserva liveness y devuelve 503 al consultar incidencias sin `DB_*`. No se ha añadido conexión a producción. Antes de desplegar deben definirse autenticación, permisos del CRM, HTTPS, gestión de secretos, observabilidad, copias de seguridad y revisión de seguridad; el criterio provisional de código e identificador no sustituye esos controles.

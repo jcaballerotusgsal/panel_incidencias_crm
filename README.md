@@ -1,6 +1,6 @@
 # Backoffice · NestJS + Next.js + Docker
 
-Proyecto base **nuevo e independiente** del entorno PHP/MySQL anterior.
+Módulo de consulta del CRM con aplicaciones separadas del entorno PHP original y una copia local de su base de datos.
 
 | Capa | Tecnología seleccionada |
 | --- | --- |
@@ -8,11 +8,12 @@ Proyecto base **nuevo e independiente** del entorno PHP/MySQL anterior.
 | API | NestJS 11, adaptador Express, TypeScript 5.9 |
 | Interfaz | Next.js 16, React 19, TypeScript 5.9 |
 | Estilos | Tailwind CSS 4 y PostCSS |
+| Datos locales | MySQL 5.7.21 y controlador mysql2 en NestJS |
 | Orquestación | Docker Compose v2 con contenedores Linux |
 
 Estas son las ramas elegidas para la plantilla, no una afirmación de que todas sean la última versión mayor disponible. Las versiones concretas se resuelven en la primera instalación y quedan registradas en los archivos `package-lock.json`.
 
-**Alcance:** pantalla inicial, API de ejemplo, Swagger en desarrollo, recarga automática y modo compilado. No incluye autenticación, permisos de negocio, base de datos, datos empresariales, HTTPS ni un despliegue público terminado.
+**Alcance:** formulario de consulta por código y DNI, correo o código AMB, API NestJS de lectura y ficha de resultados con 20 campos visibles organizados en secciones. El criterio de acceso exige que coincidan ambos datos. Incluye Swagger en desarrollo, recarga y configuración de compilación; quedan por definir la autenticación del CRM, permisos generales, HTTPS y despliegue público.
 
 ## 1. Arrancar en Windows / PowerShell
 
@@ -20,6 +21,7 @@ Abre Docker Desktop usando contenedores Linux y abre PowerShell en la carpeta qu
 
 ```powershell
 Copy-Item .env.example .env
+# Completa las variables MYSQL_* de .env con la configuración local antes de continuar.
 docker compose up -d --build
 docker compose logs -f
 ```
@@ -35,7 +37,7 @@ backend/package-lock.json
 frontend/package-lock.json
 ```
 
-Después, el script usa `npm ci` para respetar esos lockfiles. El ZIP no contiene lockfiles ni paquetes descargados: esta preparación no pudo resolver npm desde su entorno. Revisa las versiones y las pruebas, y añade ambos lockfiles a Git antes de compartir o construir el modo compilado.
+Después, el script usa `npm ci` para respetar esos lockfiles, que forman parte del proyecto. Revisa las versiones y las pruebas al actualizar dependencias y conserva manifiesto y lockfile juntos.
 
 Cada nuevo inicio del contenedor de desarrollo vuelve a ejecutar la instalación con el lockfile. Los cambios normales de código se recargan sin reiniciar todo el entorno.
 
@@ -49,7 +51,9 @@ Cada nuevo inicio del contenedor de desarrollo vuelve a ejecutar la instalación
 | Documentación Swagger, solo en desarrollo | `http://localhost:3001/api/docs` |
 | Salud del servidor Next.js | `http://localhost:3000/health` |
 
-La pantalla debe mostrar **API conectada** cuando ambos procesos estén respondiendo. Esa comprobación no certifica ninguna conexión a una base de datos: todavía no hay una configurada.
+La pantalla inicial envía código e identificador a `POST /api/incidencias/consulta` y navega a `/incidencias/resultado`. Devuelve la fila de `crm_incidencia` que coincide o «No se han encontrado los datos». La tabla tiene nombre singular en el esquema local verificado. El resultado solo se conserva en memoria: recargar la página exige consultar de nuevo.
+
+El servicio MySQL debe contener una copia local autorizada del CRM; no se importa ni modifica automáticamente. La configuración y procedencia se describen en [docs/base-de-datos/README.md](docs/base-de-datos/README.md). `/api/health` comprueba únicamente el proceso NestJS y declara `database: "not-checked"`.
 
 ## 3. Código que debes editar
 
@@ -68,6 +72,8 @@ backoffice-docker/
 │   ├── src/
 │   │   ├── main.ts
 │   │   ├── app.module.ts
+│   │   ├── database/
+│   │   ├── incidencias/
 │   │   └── health/
 │   └── test/
 └── frontend/
@@ -78,8 +84,9 @@ backoffice-docker/
     ├── docker/dev-entrypoint.sh
     ├── src/
     │   ├── app/page.tsx
+    │   ├── app/incidencias/resultado/page.tsx
     │   ├── app/globals.css
-    │   └── components/api-status.tsx
+    │   └── components/consulta-incidencia-form.tsx
     └── scripts/smoke.mjs
 ```
 
@@ -131,4 +138,4 @@ Consulta [docs/docker.md](docs/docker.md). Requiere los dos lockfiles y no se co
 
 ## Documentación y validación
 
-Empieza por [docs/README.md](docs/README.md). El alcance exacto de las revisiones hechas al entregar el proyecto se recoge en [docs/validacion.md](docs/validacion.md). El arranque real con Docker y la instalación npm no se han podido ejecutar en el entorno de preparación.
+Empieza por [docs/README.md](docs/README.md). Las revisiones iniciales y las comprobaciones posteriores de la consulta local se recogen por separado en [docs/validacion.md](docs/validacion.md).
