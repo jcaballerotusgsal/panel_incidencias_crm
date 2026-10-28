@@ -15,7 +15,10 @@ Para la ampliación de líneas del **23 de octubre de 2026** se revisaron el DDL
 | [diccionario.md](diccionario.md) | Columnas devueltas por la consulta |
 | [relaciones.md](relaciones.md) | Claves foráneas verificadas y cardinalidad |
 | [vistas.md](vistas.md) | Ausencia de uso de vistas en esta consulta |
+| [logs-consultas.md](logs-consultas.md) | Tabla local para futuros logs, estructura y creación manual |
 | [reglas-negocio.md](reglas-negocio.md) | Correspondencia confirmada de los campos del formulario |
 | [pendientes.md](pendientes.md) | Aspectos no verificados y condiciones para ampliar el módulo |
 
 El backend utiliza `mysql2`, consultas parametrizadas y la configuración `DB_*` de Compose. No hay ORM, sincronización, migraciones, inicialización automática ni operaciones de escritura. La configuración debe apuntar a una copia local autorizada.
+
+La ampliación solicitada el **28 de octubre de 2026** incorpora `crm_logs_consulta_incidencias` mediante un SQL de creación manual, aplicado al servicio local `db` y descrito en [logs-consultas.md](logs-consultas.md). Se verificaron los cinco campos y la ausencia de filas. No modifica las tablas originales ni incorpora escritura de logs en la aplicación.

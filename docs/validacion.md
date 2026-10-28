@@ -104,3 +104,17 @@ Se contrastaron el DDL y la unión de `atlas_vista_incidencias` en `docs/db/esqu
 | Edge headless en escritorio y móvil, con datos sintéticos | Correcto: «Línea» muestra el nombre; muestra «No informado» sin línea o sin correspondencia y rechaza nombres de tipo no válido; se conserva el flujo de consulta y las exclusiones |
 
 Se reinició el backend después de las compilaciones porque el proceso de desarrollo seguía sirviendo el contrato anterior. No se añadieron dependencias ni se modificaron registros, restricciones o permisos. No se repitieron la compilación del frontend ni la construcción de imágenes de producción; continúan pendientes los avisos de dependencias de la revisión anterior.
+
+## Tabla de logs de consultas — 28 de octubre de 2026
+
+Se crea la rama `feat/logs-consulta-incidencias` desde `develop` y se añade [backend/sql/001-crear-logs-consulta-incidencias.sql](../backend/sql/001-crear-logs-consulta-incidencias.sql). El único cambio de esquema es la nueva tabla local `crm_logs_consulta_incidencias`. Se documentan su estructura, aplicación y relación sin FK en `base-de-datos/`; no se modifica la instantánea SQL ni se implementa la escritura de logs.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Versión y metadatos antes de crear | MySQL 5.7.21; no existía la tabla de logs |
+| Aplicación manual del SQL en el servicio local `db` | Correcta con la cuenta administrativa; la cuenta del backend rechazó la creación por permisos; no se cambiaron concesiones |
+| `SHOW CREATE TABLE` e `information_schema` | Cinco columnas correctas, `id` autoincremental y clave primaria, fecha predeterminada, `Valida` como `tinyint(1)`, InnoDB y `utf8_spanish_ci`; ninguna FK |
+| `SELECT COUNT(*)` de la nueva tabla | 0 filas, sin insertar datos de prueba |
+| `docker compose exec -T frontend npm run test:smoke` | Correcto: Next.js, API, formulario, resultado, validación y consulta sin coincidencia |
+
+Solo se ejecuta el SQL de creación manual; no se añade inicialización automática ni código de aplicación. No se repiten compilaciones, lint, pruebas unitarias ni pruebas de navegador al no cambiar TypeScript, interfaz o dependencias. La tabla no se ha aplicado a otros entornos. Las comprobaciones históricas y los avisos de dependencias anteriores conservan su alcance.
