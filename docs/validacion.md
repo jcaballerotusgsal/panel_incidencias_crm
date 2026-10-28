@@ -104,3 +104,38 @@ Se contrastaron el DDL y la unión de `atlas_vista_incidencias` en `docs/db/esqu
 | Edge headless en escritorio y móvil, con datos sintéticos | Correcto: «Línea» muestra el nombre; muestra «No informado» sin línea o sin correspondencia y rechaza nombres de tipo no válido; se conserva el flujo de consulta y las exclusiones |
 
 Se reinició el backend después de las compilaciones porque el proceso de desarrollo seguía sirviendo el contrato anterior. No se añadieron dependencias ni se modificaron registros, restricciones o permisos. No se repitieron la compilación del frontend ni la construcción de imágenes de producción; continúan pendientes los avisos de dependencias de la revisión anterior.
+
+## Tabla de logs de consultas — 28 de octubre de 2026
+
+Se crea la rama `feat/logs-consulta-incidencias` desde `develop` y se añade [backend/sql/001-crear-logs-consulta-incidencias.sql](../backend/sql/001-crear-logs-consulta-incidencias.sql). El único cambio de esquema es la nueva tabla local `crm_logs_consulta_incidencias`. Se documentan su estructura, aplicación y relación sin FK en `base-de-datos/`; no se modifica la instantánea SQL ni se implementa la escritura de logs.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Versión y metadatos antes de crear | MySQL 5.7.21; no existía la tabla de logs |
+| Aplicación manual del SQL en el servicio local `db` | Correcta con la cuenta administrativa; la cuenta del backend rechazó la creación por permisos; no se cambiaron concesiones |
+| `SHOW CREATE TABLE` e `information_schema` | Cinco columnas correctas, `id` autoincremental y clave primaria, fecha predeterminada, `Valida` como `tinyint(1)`, InnoDB y `utf8_spanish_ci`; ninguna FK |
+| `SELECT COUNT(*)` de la nueva tabla | 0 filas, sin insertar datos de prueba |
+| `docker compose exec -T frontend npm run test:smoke` | Correcto: Next.js, API, formulario, resultado, validación y consulta sin coincidencia |
+
+Solo se ejecuta el SQL de creación manual; no se añade inicialización automática ni código de aplicación. No se repiten compilaciones, lint, pruebas unitarias ni pruebas de navegador al no cambiar TypeScript, interfaz o dependencias. La tabla no se ha aplicado a otros entornos. Las comprobaciones históricas y los avisos de dependencias anteriores conservan su alcance.
+
+## Registro automático de consultas — 28 de octubre de 2026
+
+Primero se guarda la tabla y su documentación en el commit `3660d3d`, en `feat/logs-consulta-incidencias`. Después se incorpora `LogsConsultasRepository`, la inserción parametrizada en `DatabaseService` y la espera de su confirmación desde `IncidenciasService`. Se registra el instante de inicio del servicio en UTC, los campos recibidos y si se encontró una incidencia. El formulario conserva ceros iniciales y espacios; el DTO admite códigos numéricos o cadenas decimales válidas sin perder su representación.
+
+Se escriben los intentos con coincidencia o sin ella, y se intenta registrar un fallo de lectura como no válido. Un fallo de log responde 503; los 400 no ejecutan SQL. Se actualizan API, arquitectura, datos, Docker y la documentación de la prueba de humo. No se cambian dependencias, concesiones, tablas originales ni el SQL de creación.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| `docker compose config --quiet` | Correcto, sin imprimir credenciales |
+| Permisos efectivos del backend local | `INSERT` ya disponible; no se modifican usuarios ni concesiones |
+| `docker compose exec -T backend npm run typecheck` | Correcto |
+| `docker compose exec -T backend npm test` | Compilación NestJS y 38 pruebas correctas: identificadores, log de 200/404/503, espera de escritura, repetición, conservación de entradas, UTC, validación y errores públicos |
+| `docker compose exec -T frontend npm run typecheck` | Correcto |
+| `docker compose exec -T frontend npm run lint` | Sin errores; permanece la advertencia previa de `postcss.config.mjs` |
+| HTTP de pruebas con lectura sintética y escritura MySQL real | Cinco peticiones y cuatro logs sintéticos correctos: dos coincidencias repetidas, 404 y fallo de lectura; ids distintos, valores originales y UTC; el 400 no inserta |
+| Edge headless con respuestas sintéticas, escritorio y móvil | Correcto: envío de código con ceros e identificador con espacios, ficha, línea, ausencia de datos y recuperación ante errores |
+| Next.js → API en ejecución → MySQL local | Correcto: un 404 sintético y un único log con los campos originales y `Valida = 0` |
+| `docker compose exec -T frontend npm run test:smoke` | Correcto, también después de reiniciar el backend |
+
+Se reinició únicamente el backend de desarrollo porque el proceso activo seguía sirviendo el DTO anterior tras compilar las pruebas; la verificación a través de Next.js se repitió con éxito. Las comprobaciones de almacenamiento y humo generan logs sintéticos, sin insertar ni modificar incidencias ni exportar datos personales. No se construyeron imágenes de producción ni se repitió la compilación del frontend; continúan pendientes los avisos de dependencias históricos.

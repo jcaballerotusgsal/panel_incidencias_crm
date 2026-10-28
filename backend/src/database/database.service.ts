@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
-import { createPool, Pool, RowDataPacket } from 'mysql2/promise';
+import { createPool, Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 /** Mantiene la conexión MySQL del backend sin crear ni sincronizar objetos. */
 @Injectable()
@@ -55,7 +55,27 @@ export class DatabaseService implements OnModuleDestroy {
     }
   }
 
-  /** Cierra las conexiones al apagar NestJS; espera a que terminen las lecturas activas. */
+  /**
+   * Inserta una fila mediante SQL fijo y valores parametrizados, con cinco segundos de límite.
+   * @param sql INSERT definido en un repositorio del backend; no recibe SQL del navegador.
+   * @param parameters Valores que se guardan, separados del texto SQL.
+   * @returns Promesa resuelta después de confirmar una única fila insertada.
+   * @throws ServiceUnavailableException si falta configuración o no se confirma la inserción.
+   */
+  async insert(sql: string, parameters: readonly (string | number)[]): Promise<void> {
+    if (!this.pool) {
+      throw new ServiceUnavailableException('No se ha podido registrar la consulta. Inténtalo de nuevo.');
+    }
+    try {
+      const [result] = await this.pool.execute<ResultSetHeader>({ sql, timeout: 5000 }, [...parameters]);
+      if (result.affectedRows !== 1) throw new Error('No se ha confirmado una única inserción.');
+    } catch {
+      // El error del driver puede contener el identificador: solo se devuelve un mensaje público.
+      throw new ServiceUnavailableException('No se ha podido registrar la consulta. Inténtalo de nuevo.');
+    }
+  }
+
+  /** Cierra el pool al apagar NestJS y espera a que terminen las operaciones activas. */
   async onModuleDestroy(): Promise<void> {
     await this.pool?.end();
   }

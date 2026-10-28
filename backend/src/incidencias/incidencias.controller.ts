@@ -11,10 +11,10 @@ export class IncidenciasController {
   constructor(private readonly incidencias: IncidenciasService) {}
 
   /**
-   * Atiende una consulta sin incluir identificadores en la URL ni cachear la fila.
+   * Atiende y registra una consulta sin incluir identificadores en la URL ni cachear la fila.
    * @param consulta Cuerpo JSON validado por ValidationPipe.
    * @returns Las columnas de la incidencia que coincide con ambos datos.
-   * @throws NotFoundException si no coincide; ServiceUnavailableException si falla MySQL.
+   * @throws NotFoundException si no coincide; ServiceUnavailableException si falla la lectura o su log.
    */
   @Post('consulta')
   @HttpCode(200)

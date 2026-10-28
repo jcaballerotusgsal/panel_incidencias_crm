@@ -18,3 +18,7 @@ Se utiliza `LEFT JOIN crm_lineas_tusgsal_amb AS l ON i.m_linea = l.id_linea_amb`
 `crm_lineas_tusgsal_amb.id_linea_amb` es una clave primaria de una sola columna, verificada el **23 de octubre de 2026**. Cada incidencia tiene como máximo una correspondencia de línea. El `LEFT JOIN` mantiene la incidencia aunque `m_linea` sea null o no exista en el catálogo, devolviendo `nom_linea_tusgsal: null`. No se utiliza `LIMIT 1` para resolver duplicados de líneas: la unicidad de la clave evita esos duplicados.
 
 No se añaden relaciones hipotéticas ni se modifican restricciones.
+
+## Tabla de logs de consultas
+
+`crm_logs_consulta_incidencias.CodIncidencia` conserva el código introducido como texto y no tiene clave foránea hacia `crm_incidencia.id`. La tabla debe poder recoger consultas sin coincidencia o con un código inexistente. La única clave es el `id` del log; no se añaden restricciones a las tablas originales. La estructura se describe en [logs-consultas.md](logs-consultas.md).

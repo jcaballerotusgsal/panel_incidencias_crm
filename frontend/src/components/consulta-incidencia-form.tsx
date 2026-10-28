@@ -16,7 +16,7 @@ export function ConsultaIncidenciaForm() {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Envía una lectura por POST; distingue ausencia de datos de fallos de servicio.
+   * Envía los campos originales por POST para consultarlos y registrarlos en el backend.
    * @param event Envío del formulario, cuyo comportamiento HTML se cancela.
    * @returns Promesa que termina tras navegar o mostrar un error; no propaga errores de red.
    */
@@ -40,7 +40,7 @@ export function ConsultaIncidenciaForm() {
       const response = await fetch('/api/incidencias/consulta', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigoIncidencia: Number(codigo), identificador: identificador.trim() }),
+        body: JSON.stringify({ codigoIncidencia: codigo, identificador }),
         cache: 'no-store',
         signal: AbortSignal.timeout(10000),
       });

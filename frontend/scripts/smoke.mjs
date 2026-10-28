@@ -13,6 +13,7 @@ async function get(path) {
 
 /**
  * Valida Next.js, el proxy, el formulario y los casos de entrada inválida o sin coincidencia.
+ * La consulta sintética 404 genera un log; la entrada 400 no ejecuta SQL.
  * @returns Promesa que termina cuando las respuestas cumplen sus contratos.
  * @throws AssertionError ante estados o contenidos inesperados; Error ante fallos de red.
  */
