@@ -30,7 +30,7 @@ La regla de proxy no incorpora autenticación. Cualquier endpoint de NestJS situ
 
 ## Responsabilidades
 
-En el backend, cada dominio de negocio tiene su módulo, controladores, servicios y DTO. `IncidenciasModule` valida la entrada y exige código e identificador antes de devolver una fila; el repositorio enumera las columnas y parametriza la consulta. Un `LEFT JOIN` por `crm_incidencia.m_linea = crm_lineas_tusgsal_amb.id_linea_amb` añade `nom_linea_tusgsal`, con cardinalidad máxima de una correspondencia por la clave primaria del catálogo. `DatabaseModule` mantiene un pool `mysql2` con credenciales `DB_*`, tiempos de espera y cierre de conexiones. No crea objetos ni ejecuta migraciones.
+En el backend, cada dominio de negocio tiene su módulo, controladores, servicios y DTO. `IncidenciasModule` valida la entrada y exige código e identificador antes de devolver una fila; el repositorio enumera las columnas y parametriza la consulta. Un `LEFT JOIN` por `crm_incidencia.m_linea = crm_lineas_tusgsal_amb.id_linea_amb` añade `nom_linea_tusgsal`, con cardinalidad máxima de una correspondencia por la clave primaria del catálogo. `IncidenciasService` captura el instante de inicio y espera a que `LogsConsultasRepository` guarde el intento en `crm_logs_consulta_incidencias`, tanto con coincidencia como sin ella o ante un error de lectura. Un fallo de registro responde 503. `DatabaseModule` mantiene un pool `mysql2` con credenciales `DB_*`, lecturas e inserciones parametrizadas, tiempos de espera y cierre de conexiones. No crea objetos ni ejecuta migraciones.
 
 En el frontend, `src/app/` contiene rutas y layouts; `src/components/` contiene componentes reutilizables. El formulario de inicio envía código e identificador a `POST /api/incidencias/consulta`, verifica el contrato JSON y navega a `/incidencias/resultado`. La ficha muestra 20 campos mediante una lista explícita de presentación: código, detalle, información de la incidencia, contacto, acontecimiento y fechas del registro. «Línea» presenta `nom_linea_tusgsal` en lugar del id. Los ocho campos excluidos se documentan en [reglas-negocio.md](base-de-datos/reglas-negocio.md); la respuesta API conserva las 28 columnas originales y añade el nombre de línea (29 propiedades). La presentación usa etiquetas legibles, fechas sin conversión de zona horaria y «No informado» para valores ausentes. Un contexto de React conserva el resultado solo en memoria, sin datos en la URL, cookies ni almacenamiento persistente. Recargar exige consultar de nuevo. El componente de ejemplo `ApiStatus` se conserva, aunque no se muestra en la página inicial.
 
@@ -46,6 +46,8 @@ Los volúmenes de las aplicaciones contienen dependencias, compilados o caché:
 - `frontend_next`
 
 El volumen independiente `crm_mysql5721_data` conserva la copia local del CRM en MySQL 5.7.21. La incorporación de la consulta no importa datos, modifica objetos ni accede al entorno PHP original. La procedencia y los límites de la revisión están en [base-de-datos/README.md](base-de-datos/README.md).
+
+La ampliación de logs añade una tabla creada manualmente en esa copia local y escritura exclusiva de intentos en ella. El frontend conserva el texto de los campos; la búsqueda utiliza el código numérico y el identificador recortado, mientras que el log conserva las entradas recibidas. Las incidencias, el catálogo y el esquema original de referencia mantienen su estructura.
 
 ## Producción
 

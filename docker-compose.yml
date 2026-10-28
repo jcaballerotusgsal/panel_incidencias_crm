@@ -17,7 +17,7 @@ services:
       NODE_ENV: development
       PORT: "3001"
       ENABLE_SWAGGER: "true"
-      # Pool de lectura de NestJS para consultar la copia local del CRM.
+      # Pool de NestJS para leer el CRM local y registrar intentos en la tabla de logs.
       # No inicializa, sincroniza ni modifica el esquema existente.
       DB_HOST: db
       DB_PORT: "3306"

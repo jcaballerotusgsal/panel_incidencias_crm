@@ -15,10 +15,10 @@ Para la ampliación de líneas del **23 de octubre de 2026** se revisaron el DDL
 | [diccionario.md](diccionario.md) | Columnas devueltas por la consulta |
 | [relaciones.md](relaciones.md) | Claves foráneas verificadas y cardinalidad |
 | [vistas.md](vistas.md) | Ausencia de uso de vistas en esta consulta |
-| [logs-consultas.md](logs-consultas.md) | Tabla local para futuros logs, estructura y creación manual |
+| [logs-consultas.md](logs-consultas.md) | Tabla local de logs, estructura, creación manual y registro de intentos |
 | [reglas-negocio.md](reglas-negocio.md) | Correspondencia confirmada de los campos del formulario |
 | [pendientes.md](pendientes.md) | Aspectos no verificados y condiciones para ampliar el módulo |
 
-El backend utiliza `mysql2`, consultas parametrizadas y la configuración `DB_*` de Compose. No hay ORM, sincronización, migraciones, inicialización automática ni operaciones de escritura. La configuración debe apuntar a una copia local autorizada.
+El backend utiliza `mysql2`, consultas parametrizadas y la configuración `DB_*` de Compose. Lee las incidencias y su catálogo y escribe únicamente los intentos en `crm_logs_consulta_incidencias`. No hay ORM, sincronización, migraciones ni inicialización automática. La configuración debe apuntar a una copia local autorizada.
 
-La ampliación solicitada el **28 de octubre de 2026** incorpora `crm_logs_consulta_incidencias` mediante un SQL de creación manual, aplicado al servicio local `db` y descrito en [logs-consultas.md](logs-consultas.md). Se verificaron los cinco campos y la ausencia de filas. No modifica las tablas originales ni incorpora escritura de logs en la aplicación.
+La ampliación solicitada el **28 de octubre de 2026** incorpora `crm_logs_consulta_incidencias` mediante un SQL de creación manual, aplicado al servicio local `db` y descrito en [logs-consultas.md](logs-consultas.md). En su creación se verificaron los cinco campos y la ausencia de filas. La petición posterior del mismo día autoriza registrar cada consulta validada; se implementa la inserción de logs sin modificar las tablas originales. Los permisos locales existentes ya permiten `INSERT` y no se cambian concesiones.

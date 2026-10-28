@@ -55,9 +55,11 @@ Después de cambiar los puertos, ejecuta de nuevo `docker compose up -d`. Un sim
 
 ## Edición y recarga
 
-El backend recibe `DB_HOST=db`, `DB_PORT=3306`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` desde Compose. El módulo de datos usa `mysql2` con pool de cuatro conexiones, conexión y consultas con timeout de cinco segundos y fechas devueltas como texto. La ruta de consulta responde 503 si falta configuración o falla MySQL. No se introducen variables de conexión en el frontend.
+El backend recibe `DB_HOST=db`, `DB_PORT=3306`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` desde Compose. El módulo de datos usa `mysql2` con pool de cuatro conexiones, conexión y operaciones con timeout de cinco segundos y fechas devueltas como texto. La ruta de consulta responde 503 si falta configuración, falla la lectura o no puede confirmarse la escritura del log. No se introducen variables de conexión en el frontend.
 
 El servicio `db` conserva MySQL **5.7.21** y su volumen `crm_mysql5721_data`; Adminer es solo una herramienta local. Para utilizar la consulta debe existir una copia local autorizada del CRM con `crm_incidencia`; el módulo no importa el esquema ni crea tablas. Consulta [base-de-datos/README.md](base-de-datos/README.md) para la procedencia y las discrepancias verificadas. La instantánea SQL nunca se ejecuta automáticamente.
+
+El registro requiere además `crm_logs_consulta_incidencias`, creada manualmente con [backend/sql/001-crear-logs-consulta-incidencias.sql](../backend/sql/001-crear-logs-consulta-incidencias.sql). La cuenta del backend necesita `SELECT` sobre incidencias y líneas e `INSERT` sobre logs; no necesita `CREATE`, `UPDATE` o `DELETE` para este flujo. En la copia local se verificó que ya dispone de inserción, sin cambiar concesiones. Cada consulta validada espera su log y guarda la fecha de inicio del servicio en UTC. El SQL de creación no se conecta al arranque de los contenedores.
 
 `./backend` se monta en `/app` del backend y `./frontend` en `/app` del frontend. Los `node_modules` son volúmenes de Docker para no reutilizar binarios de Windows/macOS en Linux.
 
@@ -105,7 +107,7 @@ docker compose exec frontend npm run lint
 docker compose exec frontend npm run test:smoke
 ```
 
-`test:smoke` se ejecuta dentro del frontend y prueba `/health`, `/api/health`, `/api`, el formulario y `/incidencias/resultado`. También comprueba un POST no válido (400) y una consulta sintética sin coincidencia (404), por lo que requiere la tabla local y la conexión funcionando. No es una prueba automatizada con navegador real. `npm test` del backend utiliza datos sintéticos y dobles de acceso a datos; no inserta registros del CRM.
+`test:smoke` se ejecuta dentro del frontend y prueba `/health`, `/api/health`, `/api`, el formulario y `/incidencias/resultado`. También comprueba un POST no válido (400) y una consulta sintética sin coincidencia (404), por lo que requiere las tablas locales y la conexión funcionando. La consulta 404 genera un log sintético con identificador `SMOKE-SIN-COINCIDENCIA`; el 400 no escribe. No es una prueba automatizada con navegador real. `npm test` del backend utiliza datos sintéticos y dobles de acceso a datos, incluidos los logs; no inserta registros del CRM ni logs reales.
 
 La compilación de `npm test` puede provocar reinicios del watcher de NestJS. Si aparece `EADDRINUSE` y el proceso sigue sirviendo rutas antiguas, ejecuta `docker compose restart backend` tras las pruebas y repite `test:smoke`; no elimines volúmenes.
 
