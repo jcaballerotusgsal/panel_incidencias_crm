@@ -21,6 +21,7 @@ const grupos: readonly GrupoResultado[] = [
   {
     titulo: 'Información de la incidencia',
     campos: [
+      { campo: 'estados_expedientes', etiqueta: 'Estado', anchoCompleto: true },
       { campo: 'm_tipo', etiqueta: 'Tipo de incidencia' },
       { campo: 'via_recepcion', etiqueta: 'Vía de recepción' },
       { campo: 'fecha_recepcion', etiqueta: 'Fecha de recepción', fecha: true, anchoCompleto: true },
@@ -59,12 +60,17 @@ const grupos: readonly GrupoResultado[] = [
 ];
 
 /**
- * Prepara un valor para su lectura sin interpretar HTML ni convertir zonas horarias.
+ * Prepara columnas y estados para su lectura sin interpretar HTML ni convertir zonas horarias.
  * @param valor Columna validada de la API; puede faltar o estar vacía.
  * @param fecha Si debe presentar una fecha MySQL como día/mes/año, conservando su hora.
- * @returns Texto legible, o «No informado» cuando no existe un valor; conserva el cero.
+ * @returns Texto legible, estados distintos o «Sin expediente» para listas vacías; conserva cero y nulos.
  */
 function mostrarValor(valor: Incidencia[string] | undefined, fecha = false): string {
+  if (Array.isArray(valor)) {
+    if (valor.length === 0) return 'Sin expediente';
+    // Se presentan todos los estados distintos, sin deducir cuál es el estado vigente de la incidencia.
+    return [...new Set(valor.map((estado) => mostrarValor(estado)))].join(' · ');
+  }
   if (valor === null || valor === undefined || (typeof valor === 'string' && !valor.trim())) {
     return 'No informado';
   }
