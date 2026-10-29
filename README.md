@@ -13,7 +13,7 @@ Módulo de consulta del CRM con aplicaciones separadas del entorno PHP original 
 
 Estas son las ramas elegidas para la plantilla, no una afirmación de que todas sean la última versión mayor disponible. Las versiones concretas se resuelven en la primera instalación y quedan registradas en los archivos `package-lock.json`.
 
-**Alcance:** formulario de consulta por código y DNI, correo o código AMB, API NestJS de lectura y ficha de resultados con 20 campos visibles organizados en secciones. El criterio de acceso exige que coincidan ambos datos. Incluye Swagger en desarrollo, recarga y configuración de compilación; quedan por definir la autenticación del CRM, permisos generales, HTTPS y despliegue público.
+**Alcance:** formulario de consulta por código y DNI, correo o código AMB, API NestJS de consulta y registro de intentos, y ficha de resultados con 21 campos visibles, incluidos el nombre de línea y los estados de los expedientes. El criterio de acceso exige que coincidan ambos datos. Incluye Swagger en desarrollo, recarga y configuración de compilación; quedan por definir la autenticación del CRM, permisos generales, HTTPS y despliegue público.
 
 ## 1. Arrancar en Windows / PowerShell
 
@@ -138,4 +138,4 @@ Consulta [docs/docker.md](docs/docker.md). Requiere los dos lockfiles y no se co
 
 ## Documentación y validación
 
-Empieza por [docs/README.md](docs/README.md). Las revisiones iniciales y las comprobaciones posteriores de la consulta local se recogen por separado en [docs/validacion.md](docs/validacion.md).
+Para entender la aplicación paso a paso, empieza por la [guía de funcionamiento](docs/guia-funcionamiento/README.md). [docs/README.md](docs/README.md) reúne el resto de documentos. Las revisiones iniciales y las comprobaciones posteriores de la consulta local se recogen por separado en [docs/validacion.md](docs/validacion.md).
