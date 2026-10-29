@@ -32,6 +32,8 @@ Metadatos locales verificados el **23 de octubre de 2026** y contrastados con `d
 
 `crm_incidencia.m_linea` referencia el valor `id_linea_amb` para esta lectura, sin una FK declarada entre ambos campos. El `LEFT JOIN` conserva incidencias sin línea o sin correspondencia; `nom_linea_tusgsal` será null en esos casos. La ficha muestra este nombre bajo «Línea» y conserva el id original solo en la respuesta API.
 
+Desde el **29 de octubre de 2026**, `GET /api/lineas` también ofrece este catálogo para el formulario de nueva queja. Enumera id y nombre, excluye nombres nulos o vacíos tras `TRIM` y ordena por nombre e id. Mantiene cada identificador aunque se repita el nombre. El desplegable muestra `nom_linea_tusgsal` y conserva `id_linea_amb` como valor; no añade un campo `id_amb` ni escribe en la tabla.
+
 ## Estados de crm_expediente
 
 Metadatos locales verificados el **28 de octubre de 2026** y contrastados con `docs/db/esquema.sql`:

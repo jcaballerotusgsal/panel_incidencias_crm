@@ -158,3 +158,22 @@ Se contrastan columnas, claves e índices con MySQL 5.7.21 y el DDL de referenci
 | `docker compose exec -T frontend npm run test:smoke` | Correcto después de reiniciar únicamente el backend para cargar la compilación nueva |
 
 La comprobación adicional de una incidencia real con el repositorio no fue autorizada y no se ejecutó; no se afirma una verificación positiva del resultado con registros reales. Las pruebas funcionales emplean datos sintéticos y la inspección local solo devuelve metadatos y contadores. La prueba de humo conserva su efecto documentado de crear un log sintético. No se modifica el esquema, los estados, las incidencias, los expedientes, las vistas, las concesiones ni las dependencias. No se repiten compilación del frontend ni construcción de imágenes de producción; los avisos de dependencias anteriores siguen pendientes.
+
+## Estructura del formulario de queja — 29 de octubre de 2026
+
+La rama `feat/formulario-nueva-queja` parte de `develop`. Añade `/quejas/nueva`, su enlace en la cabecera, los 15 campos solicitados y seis obligatorios. El envío permanece deshabilitado y se cancela el evento de submit; no se incorpora un endpoint de alta. La única carga de datos nueva es `GET /api/lineas`, que devuelve id y nombre del catálogo existente. El valor del desplegable es `id_linea_amb`, nombre real contrastado con los metadatos locales; la etiqueta es `nom_linea_tusgsal`.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Metadatos locales de MySQL 5.7.21 | Clave primaria `id_linea_amb` y nombre `varchar(5)` nullable con `utf8_general_ci` confirmados; sin cambios de esquema |
+| `docker compose exec -T backend npm run typecheck` | Correcto |
+| `docker compose exec -T backend npm test` | Compilación NestJS y 49 pruebas correctas; cinco nuevas para catálogo, nombres repetidos, lista vacía, error público y ausencia de POST |
+| SQL del repositorio sobre fuentes derivadas sintéticas en MySQL | Tres casos correctos: filtrado de nombres nulos/vacíos, orden, conservación de ids y nombres repetidos; ninguna escritura |
+| `docker compose exec -T frontend npm run typecheck` | Correcto |
+| `docker compose exec -T frontend npm run lint` | Sin errores; permanece la advertencia previa de `postcss.config.mjs` |
+| Edge headless con catálogo sintético, escritorio y móvil | Correcto: navegación, 15 campos, seis obligatorios, fecha `dd-mm-aaaa`, hora `hh:mm`, código postal con cero inicial y valor de línea por id |
+| Prevención de envío y errores del catálogo en navegador | Cero POST al pulsar Enter y usar `requestSubmit`; sin almacenamiento web; catálogo vacío, 503, fallo de red y cinco contratos incorrectos controlados |
+| Capturas locales de escritorio y móvil | Revisadas visualmente, sin desbordamiento horizontal |
+| `docker compose exec -T frontend npm run test:smoke` | Correcto: nueva página, catálogo real local mediante el proxy y comprobaciones existentes de consulta |
+
+Se reinició únicamente el backend tras compilar las pruebas. El primer smoke durante su arranque respondió 500 en `/api/health`; al terminar el inicio se repitió con éxito. El smoke conserva su log sintético habitual y no envía quejas. Los ensayos de SQL y navegador usan datos sintéticos; no se guardan registros del catálogo en la documentación. No se modifican tablas, permisos ni dependencias. Quedan fuera de esta fase el guardado y las reglas de creación de quejas. No se ejecutan la compilación de producción del frontend ni la construcción de imágenes; continúan pendientes los avisos de dependencias históricos.

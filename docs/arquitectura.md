@@ -38,6 +38,8 @@ En el frontend, `src/app/` contiene rutas y layouts; `src/components/` contiene 
 
 `/health` en Next.js comprueba la vida del servidor web. `/api/health` comprueba el proceso NestJS. Ninguno comprueba SQL, correo, colas ni otras dependencias externas.
 
+La cabecera compartida enlaza la consulta inicial con `/quejas/nueva`. Esta nueva página contiene los 15 campos descritos en [formulario-queja.md](formulario-queja.md) y mantiene desactivado el envío. Solo carga `GET /api/lineas`: `LineasModule` lee el id y el nombre del catálogo existente mediante `DatabaseModule`, sin consultar incidencias ni registrar logs. El frontend valida la respuesta y usa `id_linea_amb` como valor de cada opción. No hay endpoint de creación de quejas ni persistencia de sus campos.
+
 ## Almacenamiento y separación del entorno antiguo
 
 Los volúmenes de las aplicaciones contienen dependencias, compilados o caché:

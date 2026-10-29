@@ -12,6 +12,8 @@ Para la ampliación de líneas del **23 de octubre de 2026** se revisaron el DDL
 
 La ampliación de estado del **28 de octubre de 2026** contrasta `crm_expediente` con el DDL de referencia y MySQL local: `id` es clave primaria, `estado` es `varchar(20)` nullable con `utf8_spanish_ci` e `id_incidencia` tiene índice no único y FK hacia `crm_incidencia.id`. La comprobación agregada no encontró varias filas por incidencia en esa copia; el esquema sí permite esa cardinalidad. Se devuelven todos los estados relacionados tras verificar el acceso, sin añadir columnas ni actualizar estados.
 
+El **29 de octubre de 2026** se vuelven a comprobar en `information_schema` las columnas del catálogo local: `id_linea_amb` es la clave primaria `int(11)` y `nom_linea_tusgsal` permite NULL, con tipo `varchar(5)` e intercalación `utf8_general_ci`. El nuevo `GET /api/lineas` lee únicamente esas columnas para el desplegable de `/quejas/nueva`, excluyendo nombres ausentes. El nombre solicitado como `id_amb` corresponde a la columna existente `id_linea_amb`; no se renombra el esquema ni se habilita escritura de quejas.
+
 | Documento | Alcance |
 | --- | --- |
 | [diccionario.md](diccionario.md) | Columnas devueltas por la consulta |

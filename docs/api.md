@@ -7,6 +7,7 @@ Prefijo global en NestJS: `/api`.
 | GET | `/api` | Identificación de la API |
 | GET | `/api/health` | Liveness del proceso NestJS |
 | POST | `/api/incidencias/consulta` | Consulta una incidencia por código e identificador |
+| GET | `/api/lineas` | Catálogo de nombres e ids de líneas para el formulario de queja |
 | GET | `/api/docs` | Swagger cuando `ENABLE_SWAGGER=true` |
 
 El frontend reenvía las rutas `/api/*` al backend. La ruta adicional `/health` pertenece al propio Next.js.
@@ -66,6 +67,23 @@ El formulario navega a `/incidencias/resultado` tanto para un resultado como par
 Cada petición que supera la validación intenta insertar una fila en `crm_logs_consulta_incidencias`. Se guarda el instante de inicio del servicio en UTC, el código y el identificador recibidos, y `Valida = 1` si se encuentra la incidencia o `0` si no se encuentra. Una lectura que falla también intenta registrar `0` y conserva su respuesta 503. El servidor calcula este indicador; no lo acepta del navegador.
 
 La inserción es parametrizada y debe confirmarse antes de devolver 200 o 404. Si falla, la API responde 503 con «No se ha podido registrar la consulta. Inténtalo de nuevo.», sin devolver la incidencia. Una caída de MySQL puede impedir también el propio registro. Dos peticiones iguales generan dos logs; no hay deduplicación de intentos. Los rechazos del DTO (400), rutas ajenas y validaciones del formulario que no envían una petición no escriben logs. No se añade un endpoint para listar los registros.
+
+## GET /api/lineas
+
+Sin cuerpo ni parámetros de entrada. Responde HTTP 200 y `Cache-Control: no-store`, con esta estructura de ejemplo sintético:
+
+```json
+{
+  "lineas": [
+    { "id_linea_amb": 7, "nom_linea_tusgsal": "B1" },
+    { "id_linea_amb": 42, "nom_linea_tusgsal": "N2" }
+  ]
+}
+```
+
+Lee exclusivamente `id_linea_amb` y `nom_linea_tusgsal` de `crm_lineas_tusgsal_amb`, excluyendo nombres nulos o vacíos tras `TRIM`, y ordenando por nombre e id ascendente con la intercalación existente. Conserva nombres repetidos con ids distintos. Sin opciones devuelve `{ "lineas": [] }`. El nombre real de la clave es `id_linea_amb`, no `id_amb`.
+
+Ante configuración ausente o fallo de MySQL responde 503 con «No se han podido cargar las líneas. Inténtalo de nuevo.», sin detalles de conexión. No requiere código de incidencia ni datos personales; no consulta incidencias ni crea logs. No expone operaciones de escritura. `/quejas/nueva` utiliza el nombre como etiqueta y el id como valor, manteniendo desactivado el envío de la queja; véase [formulario-queja.md](formulario-queja.md).
 
 ## Añadir un módulo
 

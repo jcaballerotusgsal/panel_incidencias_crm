@@ -107,7 +107,7 @@ docker compose exec frontend npm run lint
 docker compose exec frontend npm run test:smoke
 ```
 
-`test:smoke` se ejecuta dentro del frontend y prueba `/health`, `/api/health`, `/api`, el formulario y `/incidencias/resultado`. También comprueba un POST no válido (400) y una consulta sintética sin coincidencia (404), por lo que requiere las tablas locales y la conexión funcionando. La consulta 404 genera un log sintético con identificador `SMOKE-SIN-COINCIDENCIA`; el 400 no escribe. No es una prueba automatizada con navegador real. `npm test` del backend utiliza datos sintéticos y dobles de acceso a datos, incluidos los logs; no inserta registros del CRM ni logs reales.
+`test:smoke` se ejecuta dentro del frontend y prueba `/health`, `/api/health`, `/api`, el formulario de consulta, `/incidencias/resultado`, los 15 campos de `/quejas/nueva` y el contrato de `GET /api/lineas`. También comprueba un POST no válido (400) y una consulta sintética sin coincidencia (404), por lo que requiere las tablas locales y la conexión funcionando. La consulta 404 genera un log sintético con identificador `SMOKE-SIN-COINCIDENCIA`; el 400 y el GET del catálogo no escriben. No envía quejas. No es una prueba automatizada con navegador real. `npm test` del backend utiliza datos sintéticos y dobles de acceso a datos, incluidos los logs y las líneas; no inserta registros del CRM ni logs reales.
 
 La compilación de `npm test` puede provocar reinicios del watcher de NestJS. Si aparece `EADDRINUSE` y el proceso sigue sirviendo rutas antiguas, ejecuta `docker compose restart backend` tras las pruebas y repite `test:smoke`; no elimines volúmenes.
 
