@@ -1,5 +1,9 @@
-/** Valores JSON admitidos en las columnas de la incidencia devuelta por la API. */
-export type Incidencia = { id: number; nom_linea_tusgsal: string | null } & Record<string, string | number | null>;
+/** Columnas escalares del CRM y lista explícita de estados de los expedientes relacionados. */
+export type Incidencia = {
+  id: number;
+  nom_linea_tusgsal: string | null;
+  estados_expedientes: (string | null)[];
+} & Record<string, string | number | null | (string | null)[]>;
 
 export type ResultadoConsulta =
   | { estado: 'encontrada'; incidencia: Incidencia }
@@ -8,7 +12,7 @@ export type ResultadoConsulta =
 /**
  * Verifica el JSON externo antes de guardarlo o mostrar sus columnas.
  * @param value Respuesta de la API todavía sin validar.
- * @returns Si contiene id positivo, nombre de línea como texto o null y columnas escalares.
+ * @returns Si contiene id positivo, línea, estados como texto o null y el resto de columnas escalares.
  */
 export function isConsultaResponse(value: unknown): value is { incidencia: Incidencia } {
   if (typeof value !== 'object' || value === null || !('incidencia' in value)) return false;
@@ -20,7 +24,12 @@ export function isConsultaResponse(value: unknown): value is { incidencia: Incid
     && incidencia.id > 0
     && 'nom_linea_tusgsal' in incidencia
     && (incidencia.nom_linea_tusgsal === null || typeof incidencia.nom_linea_tusgsal === 'string')
-    && Object.values(incidencia).every((campo: unknown) => campo === null
+    && 'estados_expedientes' in incidencia
+    && Array.isArray(incidencia.estados_expedientes)
+    && incidencia.estados_expedientes.every((estado: unknown) => estado === null || typeof estado === 'string')
+    // Solo esta propiedad admite listas; otros campos nuevos deben seguir siendo escalares.
+    && Object.entries(incidencia).every(([clave, campo]: [string, unknown]) => clave === 'estados_expedientes'
+      || campo === null
       || typeof campo === 'string'
       || (typeof campo === 'number' && Number.isFinite(campo)));
 }

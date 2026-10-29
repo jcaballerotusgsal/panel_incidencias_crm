@@ -16,6 +16,7 @@ const fixture = {
   dp_dni: 'PRUEBA123', dp_sexo: null, dp_idioma: null, dp_telefono: null,
   dp_email: 'prueba@example.invalid', dp_correoPostal: null, m_tipo: null,
   m_fechaAcontecimiento_date: null, m_hora: null, m_linea: 777, nom_linea_tusgsal: 'N99', m_vehiculo: null,
+  estados_expedientes: ['en revision'],
   m_zona: null, m_parada: null, m_sentido: null, m_detalle: '<script>prueba</script>',
   nombre_corto: null, incidencia_created_date: null, incidencia_date_updated: null,
   e_matricula: null, e_conductor: null, e_fecha: null, e_tempo: null,
@@ -219,6 +220,41 @@ test('El repositorio parametriza id y los tres identificadores', async () => {
   assert.doesNotMatch(calls[0].sql, /SELECT\s+\*/i);
   assert.ok(!calls[0].sql.includes(identificador));
   assert.deepEqual(calls[0].values, [417, identificador, identificador, identificador]);
+});
+
+/** Lee estados solo después de la coincidencia y conserva todos los expedientes, sin prioridad inferida. */
+for (const estados of [[], ['pendiente'], ['en revision', 'cerrada'], [null], ['pendiente', 'pendiente']]) {
+  test(`El repositorio devuelve los estados vinculados: ${JSON.stringify(estados)}`, async () => {
+    const calls = [];
+    const database = {
+      /** Simula una fila autorizada y la lectura posterior de sus expedientes. */
+      async read(sql, values) {
+        calls.push({ sql, values });
+        return calls.length === 1 ? [fixture] : estados.map((estado) => ({ estado }));
+      },
+    };
+    const incidencia = await new IncidenciasRepository(database).findByCredentials(fixture.id, fixture.dp_dni);
+    assert.deepEqual(incidencia, { ...fixture, estados_expedientes: estados });
+    assert.equal(calls.length, 2);
+    assert.match(calls[1].sql, /SELECT estado\s+FROM crm_expediente\s+WHERE id_incidencia = \?\s+ORDER BY id ASC/);
+    assert.deepEqual(calls[1].values, [fixture.id]);
+    assert.doesNotMatch(calls[1].sql, /LIMIT|SELECT\s+\*/i);
+  });
+}
+
+/** La imposibilidad de leer expedientes no se disfraza de lista vacía ni entrega un resultado parcial. */
+test('Un fallo al leer expedientes propaga un error público de servicio', async () => {
+  let reads = 0;
+  const database = {
+    /** Simula una incidencia encontrada seguida de un error de acceso a sus expedientes. */
+    async read() {
+      reads += 1;
+      if (reads === 1) return [fixture];
+      throw new ServiceUnavailableException('No se ha podido consultar la incidencia. Inténtalo de nuevo.');
+    },
+  };
+  await assert.rejects(new IncidenciasRepository(database).findByCredentials(fixture.id, fixture.dp_dni), { status: 503 });
+  assert.equal(reads, 2);
 });
 
 /** Un fallo del driver no debe propagar mensajes con SQL, credenciales ni datos personales. */

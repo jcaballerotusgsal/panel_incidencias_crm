@@ -18,7 +18,7 @@ export class IncidenciasService {
   /**
    * Busca la pareja de datos y espera a registrar el intento antes de devolver el resultado.
    * @param consulta Datos validados por el DTO de entrada.
-   * @returns Incidencia encontrada con el nombre de línea asociado, si está disponible.
+   * @returns Incidencia encontrada con su línea y los estados de sus expedientes.
    * @throws NotFoundException si el id o el identificador no coinciden.
    * @throws ServiceUnavailableException si falla la lectura o no se puede guardar su log.
    * @remarks Guarda una fila incluso sin coincidencia o si falla la lectura; no modifica incidencias ni catálogo.

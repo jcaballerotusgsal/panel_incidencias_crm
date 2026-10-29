@@ -139,3 +139,22 @@ Se escriben los intentos con coincidencia o sin ella, y se intenta registrar un 
 | `docker compose exec -T frontend npm run test:smoke` | Correcto, también después de reiniciar el backend |
 
 Se reinició únicamente el backend de desarrollo porque el proceso activo seguía sirviendo el DTO anterior tras compilar las pruebas; la verificación a través de Next.js se repitió con éxito. Las comprobaciones de almacenamiento y humo generan logs sintéticos, sin insertar ni modificar incidencias ni exportar datos personales. No se construyeron imágenes de producción ni se repitió la compilación del frontend; continúan pendientes los avisos de dependencias históricos.
+
+## Estado de los expedientes en el detalle — 28 de octubre de 2026
+
+La rama `feat/estado-expediente-incidencias` parte de `develop`. El repositorio añade una lectura parametrizada de `crm_expediente.estado` por `id_incidencia`, exclusivamente después de encontrar la pareja de código e identificador. La respuesta mantiene una única incidencia y añade `estados_expedientes`, con una entrada por expediente ordenada por id. El frontend valida esa lista y añade «Estado» a los 21 campos visibles, con todos los textos distintos, «Sin expediente» para listas vacías y «No informado» para estados nulos o vacíos.
+
+Se contrastan columnas, claves e índices con MySQL 5.7.21 y el DDL de referencia: `id_incidencia` tiene FK hacia `crm_incidencia.id` y un índice no único. El recuento agregado de la copia local no encontró incidencias con varios expedientes; el código contempla esa cardinalidad sin elegir un estado prioritario. El estado se conserva tal como existe en el CRM, sin imponer los valores de la propuesta anterior ni inicializar filas.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Metadatos y cardinalidad local de `crm_expediente` | Cuatro columnas verificadas, `estado` varchar(20) nullable, FK e índice no único confirmados; ningún caso múltiple en el recuento agregado |
+| `docker compose exec -T backend npm run typecheck` | Correcto |
+| `docker compose exec -T backend npm test` | Compilación NestJS y 44 pruebas correctas, incluidos ausencia, varios estados, nulos, repetidos y error al leer expedientes |
+| SQL del repositorio sobre fuentes derivadas sintéticas en MySQL | Doce casos correctos: filtros de acceso, línea, estados, orden por id, exclusión de expedientes de otra incidencia y ausencia de lectura de expedientes sin coincidencia; ninguna escritura |
+| `docker compose exec -T frontend npm run typecheck` | Correcto |
+| `docker compose exec -T frontend npm run lint` | Sin errores; permanece la advertencia previa de `postcss.config.mjs` |
+| Edge headless con respuestas sintéticas, escritorio y móvil | Correcto: estado visible, ausencia de expediente, nulos, vacíos, varios estados y repetidos; HTML tratado como texto, contrato incorrecto rechazado y ausencia de desbordamiento horizontal |
+| `docker compose exec -T frontend npm run test:smoke` | Correcto después de reiniciar únicamente el backend para cargar la compilación nueva |
+
+La comprobación adicional de una incidencia real con el repositorio no fue autorizada y no se ejecutó; no se afirma una verificación positiva del resultado con registros reales. Las pruebas funcionales emplean datos sintéticos y la inspección local solo devuelve metadatos y contadores. La prueba de humo conserva su efecto documentado de crear un log sintético. No se modifica el esquema, los estados, las incidencias, los expedientes, las vistas, las concesiones ni las dependencias. No se repiten compilación del frontend ni construcción de imágenes de producción; los avisos de dependencias anteriores siguen pendientes.

@@ -9,7 +9,13 @@ Claves foráneas declaradas en el MySQL local, consultadas el **23 de octubre de
 | `crm_expediente.id_incidencia` | `crm_incidencia.id` |
 | `crm_respuesta.id_incidencia` | `crm_incidencia.id` |
 
-La consulta devuelve de cero a una fila de `crm_incidencia`, identificada por su clave primaria, después de comprobar el identificador. No incluye actuaciones, expedientes ni respuestas; no se presupone una única fila en esas tablas dependientes. El DDL parcial revisado inicialmente no incluía `crm_actuacion`, cuya relación sí se comprobó en los metadatos locales.
+La consulta devuelve de cero a una incidencia, identificada por su clave primaria, después de comprobar el identificador. Una segunda lectura obtiene únicamente los estados de sus expedientes; no incluye actuaciones ni respuestas. El DDL parcial revisado inicialmente no incluía `crm_actuacion`, cuya relación sí se comprobó en los metadatos locales.
+
+## Estados de expedientes
+
+La FK `crm_expediente.id_incidencia → crm_incidencia.id` se contrastó de nuevo el **28 de octubre de 2026** con los metadatos locales. El índice de `id_incidencia` es no único: una incidencia puede tener cero, uno o varios expedientes. La comprobación agregada local no encontró incidencias con varios expedientes; esto no impone una regla de unicidad al esquema.
+
+Tras encontrar la pareja de credenciales, se ejecuta `SELECT estado FROM crm_expediente WHERE id_incidencia = ? ORDER BY id ASC`, con el id encontrado. Se devuelven todos los estados en una lista dentro de la única incidencia, sin `LIMIT 1`, sin duplicar sus datos y sin elegir un expediente como vigente. No se consultan sus expedientes si no coincide la pareja. No hay cambio de claves, índices ni restricciones.
 
 ## Unión de líneas, sin clave foránea declarada
 
