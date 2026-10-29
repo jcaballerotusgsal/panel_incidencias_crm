@@ -158,3 +158,17 @@ Se contrastan columnas, claves e índices con MySQL 5.7.21 y el DDL de referenci
 | `docker compose exec -T frontend npm run test:smoke` | Correcto después de reiniciar únicamente el backend para cargar la compilación nueva |
 
 La comprobación adicional de una incidencia real con el repositorio no fue autorizada y no se ejecutó; no se afirma una verificación positiva del resultado con registros reales. Las pruebas funcionales emplean datos sintéticos y la inspección local solo devuelve metadatos y contadores. La prueba de humo conserva su efecto documentado de crear un log sintético. No se modifica el esquema, los estados, las incidencias, los expedientes, las vistas, las concesiones ni las dependencias. No se repiten compilación del frontend ni construcción de imágenes de producción; los avisos de dependencias anteriores siguen pendientes.
+
+## Guía didáctica de funcionamiento — 29 de octubre de 2026
+
+La rama `chore/guia-funcionamiento-app` parte de `develop` en `bf825c8`. Se añade [guia-funcionamiento/README.md](guia-funcionamiento/README.md), con un índice y ocho capítulos sobre visión general, frontend, backend, recorrido HTTP, datos y logs, Docker, pruebas y el formulario de queja pendiente de integrar. Los capítulos enlazan al código leído en esa base y separan la consulta integrada del trabajo de quejas preparado en otra rama.
+
+Se revisan las rutas, DTO, servicio, SQL, registro de intentos, contexto de React, comprobación del JSON, presentación, scripts y configuración de contenedores. Se actualizan el índice de documentación y la introducción del README principal, corrigiendo el número de campos visibles a 21 e indicando el registro de consultas.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Lectura contrastada con código y documentación de `develop` | Recorridos, nombres de archivos, contratos y alcance descritos sin ejecutar consultas de datos |
+| Verificación local de enlaces de la guía y ambos índices | 127 enlaces relativos existentes, incluidos archivos de código y documentación |
+| Estructura de los nueve archivos de la guía | Índice y ocho capítulos; bloques de código cerrados, sin caracteres de sustitución UTF-8 |
+
+El cambio es documental. No se ejecutan Docker, npm, pruebas HTTP, smoke ni navegador durante esta tarea; no se afirma una nueva validación funcional de la aplicación. No se consultan datos reales, se modifican tablas o se actualizan dependencias. Las comprobaciones funcionales anteriores conservan su fecha y su alcance; las compilaciones y los avisos pendientes no se dan por resueltos con esta guía.

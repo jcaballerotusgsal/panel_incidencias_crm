@@ -2,6 +2,7 @@
 
 | Documento | Contenido |
 | --- | --- |
+| [guia-funcionamiento/README.md](guia-funcionamiento/README.md) | Guía de aprendizaje: frontend, backend, API, datos, logs, Docker y recorrido del código |
 | [arquitectura.md](arquitectura.md) | Componentes, red, separación de responsabilidades y alcance |
 | [docker.md](docker.md) | Arranque, dependencias, modo compilado y resolución de problemas |
 | [buenas-practicas.md](buenas-practicas.md) | Organización del código, comentarios, pruebas y seguridad |
