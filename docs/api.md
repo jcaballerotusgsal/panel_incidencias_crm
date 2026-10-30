@@ -7,6 +7,7 @@ Prefijo global en NestJS: `/api`.
 | GET | `/api` | Identificación de la API |
 | GET | `/api/health` | Liveness del proceso NestJS |
 | POST | `/api/incidencias/consulta` | Consulta una incidencia por código e identificador |
+| POST | `/api/quejas` | Crea incidencia, respuesta y expediente en una transacción |
 | GET | `/api/lineas` | Catálogo de nombres e ids de líneas para el formulario de queja |
 | GET | `/api/docs` | Swagger cuando `ENABLE_SWAGGER=true` |
 
@@ -68,6 +69,56 @@ Cada petición que supera la validación intenta insertar una fila en `crm_logs_
 
 La inserción es parametrizada y debe confirmarse antes de devolver 200 o 404. Si falla, la API responde 503 con «No se ha podido registrar la consulta. Inténtalo de nuevo.», sin devolver la incidencia. Una caída de MySQL puede impedir también el propio registro. Dos peticiones iguales generan dos logs; no hay deduplicación de intentos. Los rechazos del DTO (400), rutas ajenas y validaciones del formulario que no envían una petición no escriben logs. No se añade un endpoint para listar los registros.
 
+## POST /api/quejas
+
+Alta autorizada en la copia local del CRM el **30 de octubre de 2026**. Ejemplo sintético de cuerpo JSON:
+
+```json
+{
+  "nombre": "Nombre de prueba",
+  "apellidos": "Apellidos de prueba",
+  "direccion": "Calle de prueba, 12",
+  "codigoPostal": "01234",
+  "telefono": "000000000",
+  "correo": "prueba@example.invalid",
+  "dni": "PRUEBA123",
+  "fecha": "30-10-2026",
+  "hora": "14:30",
+  "linea": 7,
+  "numeroVehiculo": "0012",
+  "lugar": "Dato que no se guarda en esta fase",
+  "parada": "Parada de prueba",
+  "sentido": "Dirección de prueba",
+  "motivo": "Descripción sintética."
+}
+```
+
+`nombre`, `apellidos`, `correo`, `fecha`, `hora` y `linea` son obligatorios. Los otros campos pueden faltar, ser null o ser cadenas vacías. Se recortan los extremos de cadenas sin convertir tipos ni truncar valores. El DTO rechaza propiedades ajenas, incluidos ids, canal, idioma, estados y fechas de registro impuestos por el cliente.
+
+| Campos | Límite o validación |
+| --- | --- |
+| `nombre`, `apellidos`, `telefono`, `correo`, `numeroVehiculo` | Hasta 45 caracteres; nombre y apellidos no vacíos, correo con formato de email |
+| `dni` | Hasta 10 caracteres; sin deducir ni modificar su formato |
+| `direccion`, `lugar` | Hasta 1000 caracteres |
+| `codigoPostal` | Texto de hasta 20 caracteres, conserva ceros iniciales |
+| `parada`, `sentido` | Hasta 80 caracteres |
+| `motivo` | Hasta 20000 caracteres; sigue siendo opcional |
+| `fecha` | Fecha real `dd-mm-aaaa`, años 1000–9999; no se impone una regla de pasado/futuro |
+| `hora` | `hh:mm`, de 00:00 a 23:59 |
+| `linea` | Número entero en el rango INT firmado; debe existir con nombre disponible en el catálogo |
+
+La línea se comprueba dentro de la misma transacción con bloqueo compartido. Se insertan, en este orden, `crm_incidencia`, `crm_respuesta` y `crm_expediente`, enlazando los ids generados. Todas las operaciones usan una conexión, SQL fijo y valores parametrizados. Se espera el COMMIT para responder; ante fallos se intenta ROLLBACK y se destruye la conexión si no puede revertirse.
+
+| HTTP | Significado |
+| --- | --- |
+| 201 | `{ "codigoIncidencia": 417, "estado": "Pendiente" }`, ejemplo sintético; `Cache-Control: no-store` |
+| 400 | DTO inválido o línea no disponible; no se confirma ninguna fila del alta |
+| 503 | No se pudo confirmar la operación; mensaje público sin SQL, credenciales ni datos personales |
+
+Solo se devuelven código y estado, sin datos personales ni los ids de respuesta/expediente. Un único instante del servidor inicializa la recepción y los campos de registro, como DATETIME de **Europe/Madrid**; `crm_respuesta.fecha` usa su día. Las fechas de los logs de consulta anteriores conservan UTC. Las constantes y correspondencias están en [altas-quejas.md](base-de-datos/altas-quejas.md): Dirección + CP en `dp_correoPostal`, Motivo en `m_detalle` y Lugar sin persistir.
+
+Este POST no crea un log de consulta de incidencias ni envía correo. La transacción impide altas parciales; perder la confirmación por red puede dejar una queja completa creada sin que el cliente lo sepa. No hay idempotencia entre reintentos. Se mantiene el alcance local autorizado; esta ampliación no añade autenticación general ni conexión a producción.
+
 ## GET /api/lineas
 
 Sin cuerpo ni parámetros de entrada. Responde HTTP 200 y `Cache-Control: no-store`, con esta estructura de ejemplo sintético:
@@ -83,7 +134,7 @@ Sin cuerpo ni parámetros de entrada. Responde HTTP 200 y `Cache-Control: no-sto
 
 Lee exclusivamente `id_linea_amb` y `nom_linea_tusgsal` de `crm_lineas_tusgsal_amb`, excluyendo nombres nulos o vacíos tras `TRIM`, y ordenando por nombre e id ascendente con la intercalación existente. Conserva nombres repetidos con ids distintos. Sin opciones devuelve `{ "lineas": [] }`. El nombre real de la clave es `id_linea_amb`, no `id_amb`.
 
-Ante configuración ausente o fallo de MySQL responde 503 con «No se han podido cargar las líneas. Inténtalo de nuevo.», sin detalles de conexión. No requiere código de incidencia ni datos personales; no consulta incidencias ni crea logs. No expone operaciones de escritura. `/quejas/nueva` utiliza el nombre como etiqueta y el id como valor, manteniendo desactivado el envío de la queja; véase [formulario-queja.md](formulario-queja.md).
+Ante configuración ausente o fallo de MySQL responde 503 con «No se han podido cargar las líneas. Inténtalo de nuevo.», sin detalles de conexión. No requiere código de incidencia ni datos personales; no consulta incidencias ni crea logs. El catálogo no expone operaciones de escritura. `/quejas/nueva` utiliza el nombre como etiqueta y el id como valor antes de enviar el alta por POST; véase [formulario-queja.md](formulario-queja.md).
 
 ## Añadir un módulo
 

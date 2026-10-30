@@ -25,6 +25,10 @@ Se utiliza `LEFT JOIN crm_lineas_tusgsal_amb AS l ON i.m_linea = l.id_linea_amb`
 
 No se añaden relaciones hipotéticas ni se modifican restricciones.
 
+## Expediente y respuesta inicial del alta
+
+El alta del **30 de octubre de 2026** contrasta también `crm_expediente.id_resolucion → crm_respuesta.id_respuesta`, FK declarada con índice no único. Se crea primero la incidencia, después una respuesta con ese id y finalmente el expediente con ambos ids generados, dentro de una única transacción InnoDB. No se deduce unicidad para registros históricos ni se añaden restricciones; véase [altas-quejas.md](altas-quejas.md).
+
 ## Tabla de logs de consultas
 
 `crm_logs_consulta_incidencias.CodIncidencia` conserva el código introducido como texto y no tiene clave foránea hacia `crm_incidencia.id`. La tabla debe poder recoger consultas sin coincidencia o con un código inexistente. La única clave es el `id` del log; no se añaden restricciones a las tablas originales. La estructura se describe en [logs-consultas.md](logs-consultas.md).

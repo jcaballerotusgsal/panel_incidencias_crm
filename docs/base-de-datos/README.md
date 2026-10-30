@@ -20,9 +20,12 @@ El **29 de octubre de 2026** se vuelven a comprobar en `information_schema` las 
 | [relaciones.md](relaciones.md) | Claves foráneas verificadas y cardinalidad |
 | [vistas.md](vistas.md) | Ausencia de uso de vistas en esta consulta |
 | [logs-consultas.md](logs-consultas.md) | Tabla local de logs, estructura, creación manual y registro de intentos |
+| [altas-quejas.md](altas-quejas.md) | Alta autorizada de incidencia, respuesta y expediente, campos y transacción |
 | [reglas-negocio.md](reglas-negocio.md) | Correspondencia confirmada de los campos del formulario |
 | [pendientes.md](pendientes.md) | Aspectos no verificados y condiciones para ampliar el módulo |
 
-El backend utiliza `mysql2`, consultas parametrizadas y la configuración `DB_*` de Compose. Lee las incidencias, su catálogo y los estados de `crm_expediente`, y escribe únicamente los intentos en `crm_logs_consulta_incidencias`. No hay ORM, sincronización, migraciones ni inicialización automática. La configuración debe apuntar a una copia local autorizada.
+El backend utiliza `mysql2`, consultas parametrizadas y la configuración `DB_*` de Compose. Lee las incidencias, su catálogo y los estados de `crm_expediente`; escribe los intentos en `crm_logs_consulta_incidencias` y, por autorización del 30 de octubre, crea quejas en `crm_incidencia`, `crm_respuesta` y `crm_expediente` de forma transaccional. No hay ORM, sincronización, migraciones ni inicialización automática. La configuración debe apuntar a una copia local autorizada.
+
+La inspección de metadatos del **30 de octubre de 2026** confirma MySQL 5.7.21, las columnas de las tres tablas del alta, sus motores InnoDB y la FK `crm_expediente.id_resolucion → crm_respuesta.id_respuesta`. No encuentra triggers sobre estas tablas y confirma los permisos existentes de SELECT e INSERT sin modificar concesiones. Las discrepancias de nombres de la petición y la correspondencia confirmada por el usuario se detallan en [altas-quejas.md](altas-quejas.md). Las pruebas SQL usan filas sintéticas revertidas; no se inspeccionan registros personales reales.
 
 La ampliación solicitada el **28 de octubre de 2026** incorpora `crm_logs_consulta_incidencias` mediante un SQL de creación manual, aplicado al servicio local `db` y descrito en [logs-consultas.md](logs-consultas.md). En su creación se verificaron los cinco campos y la ausencia de filas. La petición posterior del mismo día autoriza registrar cada consulta validada; se implementa la inserción de logs sin modificar las tablas originales. Los permisos locales existentes ya permiten `INSERT` y no se cambian concesiones.

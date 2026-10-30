@@ -7,8 +7,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * Presenta la estructura de una nueva queja con datos personales, del suceso y reclamación.
- * @returns Página adaptable con catálogo de líneas de lectura y envío desactivado.
+ * Presenta el alta de una queja con datos personales, del suceso y reclamación.
+ * @returns Página adaptable que carga las líneas y muestra el código después de confirmar el alta.
  */
 export default function NuevaQuejaPage() {
   return (

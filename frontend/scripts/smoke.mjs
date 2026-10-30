@@ -13,7 +13,7 @@ async function get(path) {
 
 /**
  * Valida Next.js, el proxy, los formularios, el catálogo y los casos de consulta inválida o sin coincidencia.
- * La consulta sintética 404 genera un log; la entrada 400 no ejecuta SQL.
+ * La consulta sintética 404 genera un log; las entradas 400 no ejecutan SQL ni crean quejas.
  * @returns Promesa que termina cuando las respuestas cumplen sus contratos.
  * @throws AssertionError ante estados o contenidos inesperados; Error ante fallos de red.
  */
@@ -45,6 +45,11 @@ async function run() {
     body: '{}', signal: AbortSignal.timeout(10000),
   });
   assert.equal(invalid.status, 400);
+  const invalidQueja = await fetch(new URL('/api/quejas', origin), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: '{}', signal: AbortSignal.timeout(10000),
+  });
+  assert.equal(invalidQueja.status, 400);
   const missing = await fetch(new URL('/api/incidencias/consulta', origin), {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ codigoIncidencia: 2147483647, identificador: 'SMOKE-SIN-COINCIDENCIA' }),

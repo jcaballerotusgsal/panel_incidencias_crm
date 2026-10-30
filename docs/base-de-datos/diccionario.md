@@ -42,6 +42,24 @@ Metadatos locales verificados el **28 de octubre de 2026** y contrastados con `d
 | --- | --- | --- |
 | `id` | `int(11)`, no nulo, clave primaria | Orden determinista de los expedientes; no se interpreta como fecha |
 | `id_incidencia` | `int(11)`, nullable, índice no único | FK hacia `crm_incidencia.id` |
+| `id_resolucion` | `int(11)`, nullable, índice no único | FK hacia `crm_respuesta.id_respuesta`, contrastada el 30 de octubre de 2026 para el alta |
 | `estado` | `varchar(20)`, nullable, `utf8_spanish_ci` | Texto de estado recibido del CRM, sin imponer nuevos valores |
 
 `estados_expedientes` es una lista JSON de cadenas o null: conserva una entrada por expediente, incluidos repetidos y nulos, ordenados por `id`. `[]` significa que no hay expedientes relacionados. La ficha presenta los estados distintos como texto en «Estado»; no elige uno como vigente ni cambia datos del CRM. No se devuelve el resto de columnas de los expedientes.
+
+## Respuesta inicial de crm_respuesta
+
+Metadatos locales contrastados el **30 de octubre de 2026** para el alta de quejas:
+
+| Columnas | Tipo y nulabilidad |
+| --- | --- |
+| `id_respuesta` | `int(11)`, no nulo, PK autoincremental |
+| `id_incidencia` | `int(11)`, no nulo, FK hacia `crm_incidencia.id` |
+| `estado`, `estado2` | `varchar(20)`, no nulos, `utf8_spanish_ci` |
+| `fecha` | `date`, nullable |
+| `medio` | `varchar(20)`, nullable, `utf8_spanish_ci` |
+| `tiempo` | `int(11)`, nullable |
+| `respuesta`, `observaciones` | `longtext`, nullable, `utf8_spanish_ci` |
+| `respuesta_created_date`, `respuesta_date_updated` | `datetime`, nullable, default `CURRENT_TIMESTAMP`, sin `ON UPDATE` |
+
+El alta proporciona expresamente todas estas columnas salvo el id generado. Los textos iniciales y el uso de dirección, motivo, idioma vacío y fechas se describen en [altas-quejas.md](altas-quejas.md); no se cambian tipos ni defaults. Las nuevas filas usan `dp_apellidos` como apellidos del formulario; la regla histórica de consulta por AMB no se aplica para transformar su contenido al crear.

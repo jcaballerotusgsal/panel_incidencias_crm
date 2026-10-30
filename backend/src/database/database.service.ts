@@ -1,5 +1,6 @@
-import { Injectable, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
-import { createPool, Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { BadRequestException, Injectable, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
+import { createPool, Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { DatabaseTransaction, SqlParameter } from './database.transaction';
 
 /** Mantiene la conexión MySQL del backend sin crear ni sincronizar objetos. */
 @Injectable()
@@ -72,6 +73,56 @@ export class DatabaseService implements OnModuleDestroy {
     } catch {
       // El error del driver puede contener el identificador: solo se devuelve un mensaje público.
       throw new ServiceUnavailableException('No se ha podido registrar la consulta. Inténtalo de nuevo.');
+    }
+  }
+
+  /**
+   * Ejecuta una operación completa en una conexión y confirma solo cuando termina sin errores.
+   * @param operation Lecturas e inserciones que deben compartir transacción y orden.
+   * @returns Resultado de la operación después de confirmar COMMIT.
+   * @throws BadRequestException si el repositorio rechaza datos y se puede revertir la operación.
+   * @throws ServiceUnavailableException ante fallos de conexión, SQL, confirmación o reversión.
+   * @remarks Intenta ROLLBACK ante errores y libera la conexión; si no puede revertir, la destruye.
+   */
+  async transaction<T>(operation: (transaction: DatabaseTransaction) => Promise<T>): Promise<T> {
+    if (!this.pool) throw new ServiceUnavailableException('No se ha podido registrar la queja. Inténtalo de nuevo.');
+    let connection: PoolConnection | null = null;
+    try {
+      const session = await this.pool.getConnection();
+      connection = session;
+      await session.beginTransaction();
+      const transaction: DatabaseTransaction = {
+        /** Ejecuta el SELECT fijo con valores separados y timeout en esta misma conexión. */
+        async read<R extends RowDataPacket>(sql: string, parameters: readonly SqlParameter[]): Promise<R[]> {
+          const [rows] = await session.execute<R[]>({ sql, timeout: 5000 }, [...parameters]);
+          return rows;
+        },
+        /** Verifica el INSERT antes de entregar su id al siguiente paso de la transacción. */
+        async insert(sql: string, parameters: readonly SqlParameter[]): Promise<number> {
+          const [result] = await session.execute<ResultSetHeader>({ sql, timeout: 5000 }, [...parameters]);
+          if (result.affectedRows !== 1 || !Number.isSafeInteger(result.insertId) || result.insertId < 1) {
+            throw new Error('No se ha confirmado una única fila con id autoincremental.');
+          }
+          return result.insertId;
+        },
+      };
+      const result = await operation(transaction);
+      await session.commit();
+      return result;
+    } catch (error: unknown) {
+      let reverted = true;
+      if (connection) {
+        try { await connection.rollback(); } catch {
+          reverted = false;
+          connection.destroy();
+          connection = null;
+        }
+      }
+      if (reverted && error instanceof BadRequestException) throw error;
+      // Los errores SQL y de conexión pueden contener datos personales: no se exponen ni imprimen.
+      throw new ServiceUnavailableException('No se ha podido registrar la queja. Inténtalo de nuevo.');
+    } finally {
+      connection?.release();
     }
   }
 

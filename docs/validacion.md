@@ -177,3 +177,27 @@ La rama `feat/formulario-nueva-queja` parte de `develop`. Añade `/quejas/nueva`
 | `docker compose exec -T frontend npm run test:smoke` | Correcto: nueva página, catálogo real local mediante el proxy y comprobaciones existentes de consulta |
 
 Se reinició únicamente el backend tras compilar las pruebas. El primer smoke durante su arranque respondió 500 en `/api/health`; al terminar el inicio se repitió con éxito. El smoke conserva su log sintético habitual y no envía quejas. Los ensayos de SQL y navegador usan datos sintéticos; no se guardan registros del catálogo en la documentación. No se modifican tablas, permisos ni dependencias. Quedan fuera de esta fase el guardado y las reglas de creación de quejas. No se ejecutan la compilación de producción del frontend ni la construcción de imágenes; continúan pendientes los avisos de dependencias históricos.
+
+## Alta funcional de quejas — 30 de octubre de 2026
+
+Antes de modificar la aplicación se crea `27735fb`, `maquetacion formulario nueva queja`, como punto de guardado solicitado sobre el formulario ya versionado en `4f7dee6`. Se mantiene `feat/formulario-nueva-queja`. El alta añade `POST /api/quejas`, DTO, servicio y repositorio, y una operación transaccional en `DatabaseService`. Valida la línea dentro de esa transacción, inserta incidencia, respuesta y expediente en orden y espera COMMIT antes de devolver código y estado.
+
+Se contrastan metadatos y DDL: MySQL 5.7.21, InnoDB, columnas y relaciones verificadas, ningún trigger en las tablas del alta y permisos existentes de SELECT/INSERT. Se conservan los nombres reales `crm_incidencia`, `dp_correoPostal`, las fechas `*_created_date`/`*_date_updated` y `estado2`. El usuario confirma Dirección + CP como `dirección Cp: código postal`, Lugar sin guardar, Motivo en `m_detalle` y `m_zona` NULL. El idioma se guarda vacío, `dp_sexo` NULL y las constantes restantes siguen [altas-quejas.md](base-de-datos/altas-quejas.md).
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Metadatos y permisos de la copia local | Tablas InnoDB y FKs de incidencia/respuesta/expediente confirmadas; sin cambios de esquema, usuarios o concesiones |
+| `docker compose exec -T backend npm run typecheck` | Correcto |
+| `docker compose exec -T backend npm test` | Compilación NestJS y 133 pruebas correctas: alta, DTO, fechas, Swagger, orden e ids, parámetros, confirmación, rollback y errores públicos; incluye las pruebas existentes |
+| SQL real del repositorio y servicio en MySQL | Tres casos sintéticos correctos: alta completa y fallos antes de respuesta/expediente. Se verifican campos, fechas, claves y ausencia de filas tras revertir; el caso completo también sustituye COMMIT por ROLLBACK para no persistir pruebas |
+| `docker compose exec -T frontend npm run typecheck` | Correcto |
+| `docker compose exec -T frontend npm run lint` | Sin errores; permanece la advertencia previa de `postcss.config.mjs` |
+| Edge headless con respuestas sintéticas, escritorio y móvil | JSON de 15 campos, seis obligatorios, id numérico, un único envío simultáneo, Enter, confirmación y nuevo formulario vacío; sin almacenamiento web ni desbordamiento horizontal |
+| Errores de envío en navegador | 400, 503, fallo de red, 200 inesperado y confirmaciones 201 incorrectas no muestran éxito; conservan los campos y permiten corregir o reintentar manualmente |
+| Capturas locales | Confirmación revisada visualmente en escritorio y móvil |
+| `docker compose exec -T frontend npm run test:smoke` | Correcto tras reiniciar solo el backend; incluye POST inválido del alta (400 sin crear filas) y el log sintético habitual de la consulta 404 |
+| Enlaces de documentos de entrada, API, formulario, arquitectura y alta | 26 destinos relativos existentes; bloques de código cerrados y sin caracteres de sustitución |
+
+No se ejecuta un alta persistente de usuario por la API local: las pruebas HTTP y de navegador simulan el acceso a datos o las respuestas, y la prueba SQL real revierte todas las filas sintéticas. Las secuencias autoincrementales pueden avanzar aun con rollback; no se resetean. No se leen datos personales reales ni se modifican registros existentes. El único registro persistido por estas comprobaciones es el log sintético documentado del smoke.
+
+La recepción del alta usa un único instante del servidor expresado en Europe/Madrid, incluidos los cambios de horario; los logs de consulta mantienen UTC. No se añade envío de correo, idempotencia entre reintentos, autenticación general ni acceso a producción. No cambian dependencias, lockfiles ni estructura de las tablas. No se ejecutan la compilación de producción del frontend ni la construcción de imágenes; los avisos de dependencias anteriores siguen pendientes.

@@ -1,6 +1,6 @@
 # Formulario de nueva queja
 
-La ruta `/quejas/nueva`, accesible desde «Crear una queja» en la cabecera, presenta la estructura solicitada el **29 de octubre de 2026**. Se organiza en datos personales, datos del suceso y reclamación; utiliza dos columnas en escritorio y una en móvil.
+La ruta `/quejas/nueva`, accesible desde «Crear una queja» en la cabecera, presenta la estructura solicitada el **29 de octubre de 2026**, conectada al alta por API el **30 de octubre de 2026**. Se organiza en datos personales, datos del suceso y reclamación; utiliza dos columnas en escritorio y una en móvil.
 
 | Campo | Obligatorio | Presentación |
 | --- | --- | --- |
@@ -20,7 +20,7 @@ La ruta `/quejas/nueva`, accesible desde «Crear una queja» en la cabecera, pre
 | Sentido | No | Texto |
 | Motivo de reclamación | No | Área de texto |
 
-Los asteriscos y el atributo HTML `required` identifican los seis campos obligatorios. Se utilizan las comprobaciones nativas de formato del navegador; todavía no se implementan reglas de negocio ni comprobación de fechas de calendario.
+Los asteriscos y el atributo HTML `required` identifican los seis campos obligatorios. Además de las comprobaciones nativas del navegador, el backend valida tipos, longitudes, correo, fecha real de calendario, hora y existencia de la línea. Los límites y el JSON se describen en [api.md](api.md).
 
 ## Catálogo de líneas
 
@@ -28,8 +28,16 @@ El formulario carga `GET /api/lineas`, a través de Next.js y del backend NestJS
 
 El frontend comprueba el contrato recibido, cancela la lectura al salir de la página y aplica un timeout de diez segundos. El desplegable indica carga, catálogo vacío o error; queda deshabilitado si no puede ofrecer opciones. No se introducen líneas ficticias como alternativa. Los nombres repetidos conservan sus distintos identificadores.
 
-## Alcance de esta fase
+## Envío y confirmación
 
-El botón «Enviar queja» permanece deshabilitado y el formulario cancela el evento de envío, también por teclado o mediante `requestSubmit`. No se crea un endpoint de alta, no se guardan quejas ni se añaden logs al cargar el catálogo. Los campos personales no se envían a la API ni se guardan en cookies o almacenamiento web.
+«Enviar queja» envía los 15 campos por `POST /api/quejas`, con `linea` como número. El botón y los campos se deshabilitan mientras se espera, y un bloqueo adicional evita envíos simultáneos por clic, teclado o `requestSubmit`. Sin catálogo disponible no se permite enviar. La petición tiene un timeout de 30 segundos y no se reenvía automáticamente.
 
-Los nombres HTML de los campos describen la interfaz; no definen todavía su correspondencia de escritura con el CRM. Antes de incorporar el guardado deben confirmarse los campos de destino, las reglas de creación y el significado histórico de `dp_apellidos`, empleado en la consulta existente como identificador AMB.
+El backend crea `crm_incidencia`, `crm_respuesta` y `crm_expediente` en una transacción. Solo después del COMMIT devuelve HTTP 201 con el código y estado `Pendiente`. El frontend comprueba ese contrato, limpia el formulario y muestra la confirmación. «Crear otra queja» presenta campos vacíos; el enlace a consulta no incluye datos personales ni el código en la URL. No se guardan datos en cookies o almacenamiento web.
+
+Un 400 conserva los campos para corregirlos. Los demás fallos conservan lo escrito y avisan de que no se pudo confirmar el envío: un timeout o una respuesta perdida no permiten asegurar desde el navegador que la transacción no se haya completado. No hay deduplicación entre peticiones distintas ni envío de correo; `medio = 'correo electronico'` solo inicializa el registro de respuesta.
+
+## Correspondencia confirmada
+
+Dirección y Código postal se guardan en **`dp_correoPostal`**, el nombre existente, con formato `dirección Cp: código postal`. No existe `dp_codigoPostal`. Si falta un componente se conserva el otro; sin ambos se guarda NULL. Lugar se acepta pero **no se guarda**, según la aclaración del usuario. Motivo va a `m_detalle` y `m_zona` queda NULL.
+
+Los apellidos se guardan como apellidos del solicitante; no se convierten en un código AMB. La consulta histórica sigue comparando `dp_apellidos` por su regla anterior, pero una nueva queja se puede consultar con su código y correo o DNI. La tabla completa de destinos, constantes, nulos, estados y fechas está en [altas-quejas.md](base-de-datos/altas-quejas.md).
