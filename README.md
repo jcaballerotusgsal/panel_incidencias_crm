@@ -53,7 +53,7 @@ Cada nuevo inicio del contenedor de desarrollo vuelve a ejecutar la instalación
 
 La pantalla inicial envía código e identificador a `POST /api/incidencias/consulta` y navega a `/incidencias/resultado`. Devuelve la fila de `crm_incidencia` que coincide o «No se han encontrado los datos». La tabla tiene nombre singular en el esquema local verificado. El resultado solo se conserva en memoria: recargar la página exige consultar de nuevo.
 
-«Crear una queja» abre `/quejas/nueva`: carga las líneas por `GET /api/lineas`, envía el formulario a `POST /api/quejas` y muestra el código después de confirmar el alta. Los campos y su correspondencia están en [docs/formulario-queja.md](docs/formulario-queja.md).
+«Crear una queja» abre `/quejas/nueva`: carga líneas y poblaciones por `GET /api/lineas` y `GET /api/poblaciones`, ofrece un calendario para la fecha, envía el formulario a `POST /api/quejas` y muestra el código después de confirmar el alta. La población se guarda por id y Lugar precede al motivo en el detalle. Los campos y su correspondencia están en [docs/formulario-queja.md](docs/formulario-queja.md).
 
 El servicio MySQL debe contener una copia local autorizada del CRM; no se importa ni modifica automáticamente. La configuración y procedencia se describen en [docs/base-de-datos/README.md](docs/base-de-datos/README.md). `/api/health` comprueba únicamente el proceso NestJS y declara `database: "not-checked"`.
 

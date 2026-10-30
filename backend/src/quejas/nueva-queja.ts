@@ -9,6 +9,7 @@ export interface NuevaQueja {
   fecha: string;
   hora: string;
   linea: number;
+  zona?: number | null;
   numeroVehiculo?: string | null;
   parada?: string | null;
   sentido?: string | null;

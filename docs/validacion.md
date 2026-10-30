@@ -201,3 +201,32 @@ Se contrastan metadatos y DDL: MySQL 5.7.21, InnoDB, columnas y relaciones verif
 No se ejecuta un alta persistente de usuario por la API local: las pruebas HTTP y de navegador simulan el acceso a datos o las respuestas, y la prueba SQL real revierte todas las filas sintéticas. Las secuencias autoincrementales pueden avanzar aun con rollback; no se resetean. No se leen datos personales reales ni se modifican registros existentes. El único registro persistido por estas comprobaciones es el log sintético documentado del smoke.
 
 La recepción del alta usa un único instante del servidor expresado en Europe/Madrid, incluidos los cambios de horario; los logs de consulta mantienen UTC. No se añade envío de correo, idempotencia entre reintentos, autenticación general ni acceso a producción. No cambian dependencias, lockfiles ni estructura de las tablas. No se ejecutan la compilación de producción del frontend ni la construcción de imágenes; los avisos de dependencias anteriores siguen pendientes.
+
+## Formulario de queja v2 — 30 de octubre de 2026
+
+Primero se guarda la versión funcional anterior en `0a8d018`, `feat: guardar v1 del formulario de nueva queja`, en `feat/formulario-nueva-queja`. Después se incorpora `GET /api/poblaciones`, el desplegable opcional y su validación transaccional, el prefijo de Lugar en el detalle y un selector de calendario nativo. La v2 tiene 16 campos y conserva los seis obligatorios y el contrato de fecha `dd-mm-aaaa` del POST.
+
+Los metadatos de MySQL 5.7.21 confirman `crm_m_zona_poblaciones` como InnoDB, `id_m_zona int(11)` PK y `poblacion varchar(45)` nullable con `utf8_general_ci`; también la FK ya existente desde `crm_incidencia.m_zona`. No se cambian objetos ni concesiones. El catálogo devuelve solo id y nombre. El alta guarda el id seleccionado, o NULL sin población, y comprueba esa opción antes de insertar. El formato inicial del detalle era `[Lugar proporcionado por el usuario:(LUGAR) ] (Motivo)`, omitiendo componentes ausentes. Su revisión posterior sin paréntesis se documenta al final; la especificación vigente está en [altas-quejas.md](base-de-datos/altas-quejas.md).
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| `docker compose exec -T backend npm run typecheck` | Correcto |
+| `docker compose exec -T backend npm test` | Compilación NestJS y 158 pruebas correctas: catálogo, id opcional/cero, población inválida, rollback, formato de Lugar y compatibilidad con la v1 |
+| `docker compose exec -T frontend npm run typecheck` | Correcto |
+| `docker compose exec -T frontend npm run lint` | Sin errores; permanece la advertencia previa de `postcss.config.mjs` |
+| SQL del catálogo sobre fuentes derivadas sintéticas | Tres casos correctos: filtro de nombres nulos/vacíos, orden, ids y nombres repetidos; sin escrituras |
+| Servicio y SQL real del alta con datos sintéticos | Cinco casos correctos: sin población, con población, fallos de respuesta/expediente y población inexistente; verifica FK, id y prefijo de Lugar. Todo revertido, incluso el caso completo, sin filas persistidas |
+| Edge headless con API simulada | 16 campos, seis obligatorios, nombre visible e id numérico de población, zona null si se omite, protección de envíos simultáneos y reinicio del formulario |
+| Calendario en navegador | Input nativo `date`; valor HTML convertido sin desfases al POST, con 29 de febrero y fechas próximas a cambios de horario; año inferior a 1000 impide el envío |
+| Catálogo opcional en navegador | Vacío, 503, error de red y respuestas inválidas controlados; permite enviar sin población, sin opciones inventadas |
+| Capturas de escritorio y móvil | Revisadas visualmente: población y selector de fecha, sin desbordamiento horizontal |
+| `docker compose exec -T frontend npm run test:smoke` | Correcto: catálogos reales mediante Next.js, calendario, 16 campos, 400 de alta y comprobaciones previas. Conserva únicamente su log sintético habitual de consulta 404 |
+| Enlaces de documentos de entrada, API, formulario, arquitectura y alta | 26 destinos relativos existentes y bloques de código cerrados |
+
+Se reinicia solo el backend después de compilar las pruebas. Las pruebas de navegador simulan la creación y las de SQL real revierten las filas sintéticas; no se ejecuta un alta persistente de usuario por la API local, no se leen datos personales reales ni se actualizan registros anteriores. Los autoincrementales pueden avanzar con rollback, sin resetearse. No se añaden dependencias ni se modifican lockfiles, puertos, imágenes o esquema. No se ejecutan compilación de producción del frontend ni construcción de imágenes; los pendientes de despliegue y dependencias anteriores conservan su alcance.
+
+## Revisión del detalle antes del commit de v2 — 30 de octubre de 2026
+
+El usuario modifica el servicio para usar `[Lugar proporcionado por el usuario: LUGAR] Motivo`, sin añadir paréntesis alrededor de Lugar o Motivo. Se conserva ese cambio y se ajustan las expectativas de las pruebas y la documentación, incluidos el espacio después de los dos puntos y la ausencia de espacio antes del corchete de cierre. Se mantienen el texto literal, los saltos de línea y las reglas para componentes ausentes. Los registros ya guardados no se reescriben.
+
+Antes del commit se ejecutan de nuevo los tipos del backend y frontend, la compilación NestJS y las 158 pruebas del backend: todo correcto. El lint del frontend termina sin errores y con la advertencia previa de `postcss.config.mjs`. Tras reiniciar solo el backend, pasan la comprobación de salud mediante Next.js y `npm run test:smoke`, que conserva únicamente su log sintético habitual de consulta 404 y no crea quejas. No se repiten las pruebas de navegador ni de SQL real y no se ejecutan compilación de producción del frontend ni construcción de imágenes.

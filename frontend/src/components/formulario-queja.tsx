@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { isLineasResponse, type Linea } from '@/lib/lineas';
 import { isQuejaCreada, type QuejaCreada } from '@/lib/quejas';
+import { isPoblacionesResponse, type Poblacion } from '@/lib/poblaciones';
 
 type Campo = {
   nombre: string;
@@ -19,6 +20,11 @@ type Campo = {
 type CatalogoLineas =
   | { estado: 'cargando' }
   | { estado: 'disponible'; lineas: Linea[] }
+  | { estado: 'error' };
+
+type CatalogoPoblaciones =
+  | { estado: 'cargando' }
+  | { estado: 'disponible'; poblaciones: Poblacion[] }
   | { estado: 'error' };
 
 const estiloCampo = 'mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-2 focus:outline-sky-600 disabled:bg-slate-100 disabled:text-slate-500';
@@ -60,11 +66,12 @@ function CampoFormulario({ campo }: { campo: Campo }) {
 }
 
 /**
- * Carga el catálogo y envía la nueva queja a la API, evitando envíos simultáneos.
- * @returns Formulario con errores recuperables o confirmación del código generado tras el alta.
+ * Carga líneas y poblaciones y envía la queja con calendario nativo, evitando envíos simultáneos.
+ * @returns Formulario con catálogos validados, errores recuperables o confirmación del código generado.
  */
 export function FormularioQueja() {
   const [catalogo, setCatalogo] = useState<CatalogoLineas>({ estado: 'cargando' });
+  const [catalogoPoblaciones, setCatalogoPoblaciones] = useState<CatalogoPoblaciones>({ estado: 'cargando' });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creada, setCreada] = useState<QuejaCreada | null>(null);
@@ -102,8 +109,40 @@ export function FormularioQueja() {
     };
   }, []);
 
+  // La población es opcional y su carga no impide consultar el catálogo de líneas.
+  useEffect(() => {
+    const controller = new AbortController();
+    let activo = true;
+    const timeout = window.setTimeout(() => controller.abort(), 10000);
+
+    /**
+     * Carga el catálogo opcional sin propagar errores de red ni actualizar tras desmontar.
+     * @returns Promesa que deja el catálogo disponible o representa su error en la interfaz.
+     */
+    async function cargarPoblaciones(): Promise<void> {
+      try {
+        const response = await fetch('/api/poblaciones', { cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw new Error('Catálogo no disponible.');
+        const payload: unknown = await response.json();
+        if (!isPoblacionesResponse(payload)) throw new Error('Catálogo no válido.');
+        if (activo) setCatalogoPoblaciones({ estado: 'disponible', poblaciones: payload.poblaciones });
+      } catch {
+        if (activo) setCatalogoPoblaciones({ estado: 'error' });
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+
+    void cargarPoblaciones();
+    return () => {
+      activo = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, []);
+
   /**
-   * Envía JSON al backend; el estado de confirmación no conserva los datos personales.
+   * Convierte fecha del calendario e ids de opciones y envía JSON sin conservar datos personales al confirmar.
    * @param event Envío nativo, cancelado para controlar la petición y la respuesta.
    * @returns Promesa que termina mostrando el código creado o un error, sin reenvíos automáticos.
    */
@@ -113,7 +152,7 @@ export function FormularioQueja() {
     setError(null);
     const form = event.currentTarget;
     const data = new FormData(form);
-    const payload: Record<string, string | number> = {};
+    const payload: Record<string, string | number | null> = {};
     for (const [nombre, valor] of data.entries()) {
       if (typeof valor !== 'string') {
         setError('Revisa los campos del formulario.');
@@ -128,6 +167,19 @@ export function FormularioQueja() {
       return;
     }
     payload.linea = Number(linea);
+    const fecha = data.get('fecha');
+    if (typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      setError('Selecciona una fecha válida para el suceso.');
+      return;
+    }
+    // Se conserva el contrato dd-mm-aaaa de la API sin usar conversiones de zona horaria.
+    payload.fecha = fecha.split('-').reverse().join('-');
+    const zona = data.get('zona');
+    if (zona !== null && (typeof zona !== 'string' || (zona !== '' && !Number.isSafeInteger(Number(zona))))) {
+      setError('Selecciona una población válida o deja el campo sin especificar.');
+      return;
+    }
+    payload.zona = typeof zona === 'string' && zona !== '' ? Number(zona) : null;
     bloqueoEnvio.current = true;
     setEnviando(true);
     try {
@@ -136,7 +188,7 @@ export function FormularioQueja() {
         body: JSON.stringify(payload), cache: 'no-store', signal: AbortSignal.timeout(30000),
       });
       if (response.status === 400) {
-        setError('Revisa los campos, la fecha y la línea seleccionada.');
+        setError('Revisa los campos, la fecha y las opciones seleccionadas.');
         return;
       }
       if (response.status !== 201) throw new Error('No se ha confirmado el alta.');
@@ -176,6 +228,10 @@ export function FormularioQueja() {
   const textoOpcion = catalogo.estado === 'cargando' ? 'Cargando líneas…'
     : catalogo.estado === 'error' ? 'Líneas no disponibles'
       : lineas.length === 0 ? 'No hay líneas disponibles' : 'Selecciona una línea';
+  const poblaciones = catalogoPoblaciones.estado === 'disponible' ? catalogoPoblaciones.poblaciones : [];
+  const textoPoblacion = catalogoPoblaciones.estado === 'cargando' ? 'Cargando poblaciones…'
+    : catalogoPoblaciones.estado === 'error' ? 'Poblaciones no disponibles'
+      : poblaciones.length === 0 ? 'No hay poblaciones disponibles' : 'Sin especificar';
 
   return (
     <form method="post" onSubmit={enviarQueja} aria-busy={enviando} className="space-y-8">
@@ -195,8 +251,8 @@ export function FormularioQueja() {
             <label htmlFor="queja-fecha" className="block text-sm font-medium text-slate-700">
               Fecha<span aria-hidden="true" className="text-rose-600"> *</span>
             </label>
-            <input id="queja-fecha" name="fecha" type="text" required maxLength={10} pattern="[0-9]{2}-[0-9]{2}-[0-9]{4}" placeholder="dd-mm-aaaa" aria-describedby="queja-fecha-formato" className={estiloCampo} />
-            <p id="queja-fecha-formato" className="mt-2 text-xs text-slate-500">Formato: día-mes-año (dd-mm-aaaa).</p>
+            <input id="queja-fecha" name="fecha" type="date" required min="1000-01-01" max="9999-12-31" aria-describedby="queja-fecha-formato" className={estiloCampo} />
+            <p id="queja-fecha-formato" className="mt-2 text-xs text-slate-500">Selecciona la fecha del suceso en el calendario.</p>
           </div>
           <CampoFormulario campo={{ nombre: 'hora', etiqueta: 'Hora', tipo: 'time', obligatorio: true }} />
           <div className="min-w-0">
@@ -214,7 +270,19 @@ export function FormularioQueja() {
             </p>
           </div>
           <CampoFormulario campo={{ nombre: 'numeroVehiculo', etiqueta: 'Núm. vehículo', placeholder: 'Número del autobús', maxLength: 45 }} />
-          <CampoFormulario campo={{ nombre: 'lugar', etiqueta: 'Lugar', anchoCompleto: true, placeholder: 'Lugar de los hechos', maxLength: 1000 }} />
+          <div className="min-w-0">
+            <label htmlFor="queja-zona" className="block text-sm font-medium text-slate-700">Población</label>
+            <select id="queja-zona" name="zona" defaultValue="" disabled={catalogoPoblaciones.estado !== 'disponible' || poblaciones.length === 0} aria-busy={catalogoPoblaciones.estado === 'cargando'} aria-describedby="queja-zona-ayuda" className={estiloCampo}>
+              <option value="">{textoPoblacion}</option>
+              {poblaciones.map((poblacion) => <option key={poblacion.id_m_zona} value={poblacion.id_m_zona}>{poblacion.poblacion.trim()}</option>)}
+            </select>
+            <p id="queja-zona-ayuda" role="status" className={catalogoPoblaciones.estado === 'error' ? 'mt-2 text-xs text-rose-700' : 'mt-2 text-xs text-slate-500'}>
+              {catalogoPoblaciones.estado === 'cargando' ? 'Cargando el catálogo de poblaciones.'
+                : catalogoPoblaciones.estado === 'error' ? 'No se han podido cargar las poblaciones. Puedes enviar la queja sin especificarla.'
+                  : poblaciones.length === 0 ? 'No hay poblaciones disponibles. Puedes enviar la queja sin especificarla.' : 'Opcional. Selecciona la población donde ocurrió el suceso.'}
+            </p>
+          </div>
+          <CampoFormulario campo={{ nombre: 'lugar', etiqueta: 'Lugar', placeholder: 'Lugar de los hechos', maxLength: 1000 }} />
           <CampoFormulario campo={{ nombre: 'parada', etiqueta: 'Parada', maxLength: 80 }} />
           <CampoFormulario campo={{ nombre: 'sentido', etiqueta: 'Sentido', placeholder: 'Dirección del autobús', maxLength: 80 }} />
         </div>

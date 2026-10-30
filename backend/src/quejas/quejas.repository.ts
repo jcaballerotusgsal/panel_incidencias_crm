@@ -10,11 +10,11 @@ export class QuejasRepository {
   constructor(private readonly database: DatabaseService) {}
 
   /**
-   * Verifica la línea y crea las tres filas en su orden de claves foráneas.
+   * Verifica línea y población seleccionadas y crea las tres filas en su orden de claves foráneas.
    * @param datos Campos ya validados, con dirección postal y detalle preparados por el servicio.
    * @param momento Fecha/hora de recepción del servidor, idéntica para todos los campos de registro.
    * @returns Id de la incidencia solo después de confirmar la transacción completa.
-   * @throws BadRequestException si la línea no existe o no tiene nombre disponible.
+   * @throws BadRequestException si línea o población no existen o no tienen nombre disponible.
    * @throws ServiceUnavailableException ante un fallo; se intenta revertir la transacción completa.
    */
   async crear(datos: NuevaQueja, momento: string): Promise<number> {
@@ -27,6 +27,16 @@ export class QuejasRepository {
         LIMIT 1 LOCK IN SHARE MODE
       `, [datos.linea]);
       if (lineas.length !== 1) throw new BadRequestException('Selecciona una línea disponible en el catálogo.');
+
+      if (datos.zona !== null && datos.zona !== undefined) {
+        const zonas = await transaction.read<RowDataPacket>(`
+          SELECT id_m_zona
+          FROM crm_m_zona_poblaciones
+          WHERE id_m_zona = ? AND poblacion IS NOT NULL AND TRIM(poblacion) <> ''
+          LIMIT 1 LOCK IN SHARE MODE
+        `, [datos.zona]);
+        if (zonas.length !== 1) throw new BadRequestException('Selecciona una población disponible en el catálogo.');
+      }
 
       const incidenciaId = await transaction.insert(`
         INSERT INTO crm_incidencia (
@@ -42,7 +52,7 @@ export class QuejasRepository {
           ?, ?, ?, NULL, '',
           ?, ?, ?,
           'Queja', ?, ?, ?,
-          ?, NULL, ?, ?, ?, NULL,
+          ?, ?, ?, ?, ?, NULL,
           ?, ?,
           NULL, NULL, NULL, NULL
         )
@@ -50,7 +60,7 @@ export class QuejasRepository {
         momento, datos.nombre, datos.apellidos, datos.dni || null,
         datos.telefono || null, datos.correo, datos.direccionPostal,
         datos.fecha.split('-').reverse().join('-'), datos.hora, datos.linea,
-        datos.numeroVehiculo || null, datos.parada || null, datos.sentido || null, datos.detalle,
+        datos.numeroVehiculo || null, datos.zona ?? null, datos.parada || null, datos.sentido || null, datos.detalle,
         momento, momento,
       ]);
       const respuestaId = await transaction.insert(`

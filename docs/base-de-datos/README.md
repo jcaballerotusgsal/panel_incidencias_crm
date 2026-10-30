@@ -14,6 +14,8 @@ La ampliación de estado del **28 de octubre de 2026** contrasta `crm_expediente
 
 El **29 de octubre de 2026** se vuelven a comprobar en `information_schema` las columnas del catálogo local: `id_linea_amb` es la clave primaria `int(11)` y `nom_linea_tusgsal` permite NULL, con tipo `varchar(5)` e intercalación `utf8_general_ci`. El nuevo `GET /api/lineas` lee únicamente esas columnas para el desplegable de `/quejas/nueva`, excluyendo nombres ausentes. El nombre solicitado como `id_amb` corresponde a la columna existente `id_linea_amb`; no se renombra el esquema ni se habilita escritura de quejas.
 
+Para la v2, el **30 de octubre de 2026**, se contrasta también `crm_m_zona_poblaciones`, InnoDB, con `id_m_zona int(11)` como PK y `poblacion varchar(45)` nullable con `utf8_general_ci`. La FK existente `crm_incidencia.m_zona → crm_m_zona_poblaciones.id_m_zona` permite guardar la población elegida tras validarla. `GET /api/poblaciones` devuelve únicamente id y nombre; no se altera el catálogo ni su relación. Lugar deja de omitirse y pasa al principio de `m_detalle` según el formato solicitado, sin actualizar filas anteriores.
+
 | Documento | Alcance |
 | --- | --- |
 | [diccionario.md](diccionario.md) | Columnas devueltas por la consulta |

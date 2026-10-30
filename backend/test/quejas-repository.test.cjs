@@ -14,7 +14,7 @@ const data = {
 
 /**
  * Sustituye solo la conexión; ejecuta la transacción y el repositorio reales sobre respuestas sintéticas.
- * @param options Línea ausente o paso SQL que debe fallar.
+ * @param options Línea/población ausentes o paso SQL que debe fallar.
  * @returns Repositorio y llamadas observadas, sin acceso a registros del CRM.
  */
 function fixture(options = {}) {
@@ -29,7 +29,9 @@ function fixture(options = {}) {
       calls.push({ sql: query.sql, values });
       if (options.failAt === step) throw new Error('SQL privado con datos personales');
       if (step === 1) return [options.noLine ? [] : [{ id_linea_amb: data.linea }]];
-      return [{ affectedRows: 1, insertId: [0, 0, 417, 829, 931][step] }];
+      if (query.sql.includes('FROM crm_m_zona_poblaciones')) return [options.noZone ? [] : [{ id_m_zona: values[0] }]];
+      const table = /INSERT INTO (crm_incidencia|crm_respuesta|crm_expediente)/.exec(query.sql)?.[1];
+      return [{ affectedRows: 1, insertId: { crm_incidencia: 417, crm_respuesta: 829, crm_expediente: 931 }[table] }];
     },
     /** Registra el único COMMIT esperado al final. */
     async commit() { calls.push('commit'); },
@@ -54,7 +56,7 @@ test('Crea incidencia, respuesta y expediente con sus ids vinculados en una tran
   assert.match(calls[2].sql, /INSERT INTO crm_incidencia/);
   assert.match(calls[2].sql, /'formulario web'/);
   assert.match(calls[2].sql, /'Queja'/);
-  assert.deepEqual(calls[2].values, [momento, data.nombre, data.apellidos, data.dni, data.telefono, data.correo, data.direccionPostal, '2026-10-30', '14:30', 7, '0012', data.parada, data.sentido, data.detalle, momento, momento]);
+  assert.deepEqual(calls[2].values, [momento, data.nombre, data.apellidos, data.dni, data.telefono, data.correo, data.direccionPostal, '2026-10-30', '14:30', 7, '0012', null, data.parada, data.sentido, data.detalle, momento, momento]);
   assert.match(calls[3].sql, /INSERT INTO crm_respuesta/);
   assert.match(calls[3].sql, /'pendiente'[\s\S]*'correo electronico'[\s\S]*'abierta'/);
   assert.deepEqual(calls[3].values, [417, '2026-10-30', momento, momento]);
@@ -92,8 +94,40 @@ test('Mantiene los datos personales separados del texto SQL', async () => {
   await repository.crear({ ...data, nombre, dni: '', telefono: null, numeroVehiculo: '', parada: null, sentido: undefined }, '2026-10-30 15:04:05');
   assert.equal(calls[2].sql.includes(nombre), false);
   assert.equal(calls[2].values[1], nombre);
-  for (const index of [3, 4, 10, 11, 12]) assert.equal(calls[2].values[index], null);
+  for (const index of [3, 4, 10, 11, 12, 13]) assert.equal(calls[2].values[index], null);
 });
+
+/** La zona seleccionada se valida y se enlaza sin alterar los ids de los tres INSERT. */
+for (const zona of [9, 0]) {
+  test(`Guarda id_m_zona ${zona} tras comprobarlo dentro de la transacción`, async () => {
+    const { repository, calls } = fixture();
+    assert.equal(await repository.crear({ ...data, zona }, '2026-10-30 15:04:05'), 417);
+    assert.match(calls[2].sql, /SELECT id_m_zona[\s\S]*LOCK IN SHARE MODE/);
+    assert.deepEqual(calls[2].values, [zona]);
+    assert.equal(calls[3].values[11], zona);
+    assert.deepEqual(calls[4].values, [417, '2026-10-30', '2026-10-30 15:04:05', '2026-10-30 15:04:05']);
+    assert.deepEqual(calls[5].values, [417, 829]);
+    assert.deepEqual(calls.slice(-2), ['commit', 'release']);
+  });
+}
+
+/** La FK no se deja como único control: se rechaza la opción antes de insertar la incidencia. */
+test('Una población inexistente responde 400 y no inserta filas', async () => {
+  const { repository, calls } = fixture({ noZone: true });
+  await assert.rejects(repository.crear({ ...data, zona: 9 }, '2026-10-30 15:04:05'), (error) => error.getStatus() === 400);
+  assert.equal(calls.filter((call) => typeof call === 'object').length, 2);
+  assert.deepEqual(calls.slice(-2), ['rollback', 'release']);
+});
+
+/** Los fallos después de añadir la lectura de zona tampoco permiten COMMIT ni altas parciales. */
+for (const failAt of [2, 3, 4, 5]) {
+  test(`Revierte un alta con zona al fallar su paso SQL ${failAt}`, async () => {
+    const { repository, calls } = fixture({ failAt });
+    await assert.rejects(repository.crear({ ...data, zona: 9 }, '2026-10-30 15:04:05'), (error) => error.getStatus() === 503);
+    assert.equal(calls.includes('commit'), false);
+    assert.deepEqual(calls.slice(-2), ['rollback', 'release']);
+  });
+}
 
 /** Fechas reales y límites de calendario; no basta con cumplir una expresión regular. */
 for (const [fecha, expected] of [['29-02-2024', true], ['29-02-2000', true], ['29-02-1900', false], ['29-02-2025', false], ['31-04-2026', false], ['30-10-2026', true], ['2026-10-30', false], ['01-01-0999', false], ['00-10-2026', false], ['01-13-2026', false], [null, false], [30102026, false]]) {

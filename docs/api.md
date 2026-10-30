@@ -9,6 +9,7 @@ Prefijo global en NestJS: `/api`.
 | POST | `/api/incidencias/consulta` | Consulta una incidencia por código e identificador |
 | POST | `/api/quejas` | Crea incidencia, respuesta y expediente en una transacción |
 | GET | `/api/lineas` | Catálogo de nombres e ids de líneas para el formulario de queja |
+| GET | `/api/poblaciones` | Catálogo de poblaciones e ids de zona para el formulario de queja |
 | GET | `/api/docs` | Swagger cuando `ENABLE_SWAGGER=true` |
 
 El frontend reenvía las rutas `/api/*` al backend. La ruta adicional `/health` pertenece al propio Next.js.
@@ -85,15 +86,18 @@ Alta autorizada en la copia local del CRM el **30 de octubre de 2026**. Ejemplo 
   "fecha": "30-10-2026",
   "hora": "14:30",
   "linea": 7,
+  "zona": 9,
   "numeroVehiculo": "0012",
-  "lugar": "Dato que no se guarda en esta fase",
+  "lugar": "Lugar sintético del suceso",
   "parada": "Parada de prueba",
   "sentido": "Dirección de prueba",
   "motivo": "Descripción sintética."
 }
 ```
 
-`nombre`, `apellidos`, `correo`, `fecha`, `hora` y `linea` son obligatorios. Los otros campos pueden faltar, ser null o ser cadenas vacías. Se recortan los extremos de cadenas sin convertir tipos ni truncar valores. El DTO rechaza propiedades ajenas, incluidos ids, canal, idioma, estados y fechas de registro impuestos por el cliente.
+`nombre`, `apellidos`, `correo`, `fecha`, `hora` y `linea` son obligatorios. Los demás campos de texto pueden faltar, ser null o ser cadenas vacías. Se recortan los extremos de cadenas sin convertir tipos ni truncar valores. El DTO rechaza propiedades ajenas, incluidos ids generados, canal, idioma, estados y fechas de registro impuestos por el cliente.
+
+La v2 añade `zona` como número entero opcional: se envía `id_m_zona`, no el nombre de población. Solo este nuevo campo opcional se omite o se envía como null para no especificar zona; no acepta la cadena vacía ni ids en texto. Los clientes de la v1 que no lo envían siguen guardando zona NULL.
 
 | Campos | Límite o validación |
 | --- | --- |
@@ -106,16 +110,19 @@ Alta autorizada en la copia local del CRM el **30 de octubre de 2026**. Ejemplo 
 | `fecha` | Fecha real `dd-mm-aaaa`, años 1000–9999; no se impone una regla de pasado/futuro |
 | `hora` | `hh:mm`, de 00:00 a 23:59 |
 | `linea` | Número entero en el rango INT firmado; debe existir con nombre disponible en el catálogo |
+| `zona` | Opcional, entero en el rango INT firmado o null; si se informa, debe existir con nombre disponible en `crm_m_zona_poblaciones` |
 
-La línea se comprueba dentro de la misma transacción con bloqueo compartido. Se insertan, en este orden, `crm_incidencia`, `crm_respuesta` y `crm_expediente`, enlazando los ids generados. Todas las operaciones usan una conexión, SQL fijo y valores parametrizados. Se espera el COMMIT para responder; ante fallos se intenta ROLLBACK y se destruye la conexión si no puede revertirse.
+La línea y, si se informa, la población se comprueban dentro de la misma transacción con bloqueo compartido. Se insertan, en este orden, `crm_incidencia`, `crm_respuesta` y `crm_expediente`, enlazando los ids generados. Todas las operaciones usan una conexión, SQL fijo y valores parametrizados. Se espera el COMMIT para responder; ante fallos se intenta ROLLBACK y se destruye la conexión si no puede revertirse.
 
 | HTTP | Significado |
 | --- | --- |
 | 201 | `{ "codigoIncidencia": 417, "estado": "Pendiente" }`, ejemplo sintético; `Cache-Control: no-store` |
-| 400 | DTO inválido o línea no disponible; no se confirma ninguna fila del alta |
+| 400 | DTO inválido, línea o población no disponible; no se confirma ninguna fila del alta |
 | 503 | No se pudo confirmar la operación; mensaje público sin SQL, credenciales ni datos personales |
 
-Solo se devuelven código y estado, sin datos personales ni los ids de respuesta/expediente. Un único instante del servidor inicializa la recepción y los campos de registro, como DATETIME de **Europe/Madrid**; `crm_respuesta.fecha` usa su día. Las fechas de los logs de consulta anteriores conservan UTC. Las constantes y correspondencias están en [altas-quejas.md](base-de-datos/altas-quejas.md): Dirección + CP en `dp_correoPostal`, Motivo en `m_detalle` y Lugar sin persistir.
+Solo se devuelven código y estado, sin datos personales ni los ids de respuesta/expediente. Un único instante del servidor inicializa la recepción y los campos de registro, como DATETIME de **Europe/Madrid**; `crm_respuesta.fecha` usa su día. Las fechas de los logs de consulta anteriores conservan UTC. En la v2 se guarda la población por id en `m_zona` y se antepone Lugar al motivo como `[Lugar proporcionado por el usuario: LUGAR] Motivo` en `m_detalle`, con el formato sin paréntesis de la aclaración posterior. Dirección + CP conserva su formato en `dp_correoPostal`. Las constantes y las ausencias de campos se detallan en [altas-quejas.md](base-de-datos/altas-quejas.md).
+
+El selector nativo del frontend produce `aaaa-mm-dd`; el formulario lo convierte a `dd-mm-aaaa` para este contrato existente, sin cambiar la validación ni el formato del backend.
 
 Este POST no crea un log de consulta de incidencias ni envía correo. La transacción impide altas parciales; perder la confirmación por red puede dejar una queja completa creada sin que el cliente lo sepa. No hay idempotencia entre reintentos. Se mantiene el alcance local autorizado; esta ampliación no añade autenticación general ni conexión a producción.
 
@@ -135,6 +142,22 @@ Sin cuerpo ni parámetros de entrada. Responde HTTP 200 y `Cache-Control: no-sto
 Lee exclusivamente `id_linea_amb` y `nom_linea_tusgsal` de `crm_lineas_tusgsal_amb`, excluyendo nombres nulos o vacíos tras `TRIM`, y ordenando por nombre e id ascendente con la intercalación existente. Conserva nombres repetidos con ids distintos. Sin opciones devuelve `{ "lineas": [] }`. El nombre real de la clave es `id_linea_amb`, no `id_amb`.
 
 Ante configuración ausente o fallo de MySQL responde 503 con «No se han podido cargar las líneas. Inténtalo de nuevo.», sin detalles de conexión. No requiere código de incidencia ni datos personales; no consulta incidencias ni crea logs. El catálogo no expone operaciones de escritura. `/quejas/nueva` utiliza el nombre como etiqueta y el id como valor antes de enviar el alta por POST; véase [formulario-queja.md](formulario-queja.md).
+
+## GET /api/poblaciones
+
+Catálogo añadido por la v2 del formulario, sin cuerpo ni parámetros. Respuesta 200 y `Cache-Control: no-store`; ejemplo sintético:
+
+```json
+{
+  "poblaciones": [
+    { "id_m_zona": 9, "poblacion": "Población de prueba" }
+  ]
+}
+```
+
+Enumera únicamente `id_m_zona` y `poblacion` de `crm_m_zona_poblaciones`, excluye nombres nulos o vacíos tras TRIM y ordena por nombre e id con la intercalación existente. No agrupa nombres repetidos con ids distintos. Un catálogo sin opciones devuelve `{ "poblaciones": [] }`. Si falla la lectura responde 503 con «No se han podido cargar las poblaciones. Inténtalo de nuevo.», sin SQL ni credenciales.
+
+El formulario muestra el nombre y envía el id elegido como `zona` al POST. Sin selección, con catálogo vacío o indisponible puede omitir la zona. No se escriben poblaciones ni logs desde este endpoint y no se devuelven datos personales.
 
 ## Añadir un módulo
 

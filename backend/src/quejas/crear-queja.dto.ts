@@ -83,6 +83,13 @@ export class CrearQuejaDto {
   @Max(2147483647)
   linea!: number;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'id_m_zona de una población disponible; omitido o null conserva la zona sin especificar.' })
+  @IsOptional()
+  @IsInt()
+  @Min(-2147483648)
+  @Max(2147483647)
+  zona?: number | null;
+
   @ApiPropertyOptional({ type: String, maxLength: 45, nullable: true })
   @IsOptional()
   @Transform(recortarTexto)

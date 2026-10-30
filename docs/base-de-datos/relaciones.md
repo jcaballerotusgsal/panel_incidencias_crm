@@ -29,6 +29,10 @@ No se añaden relaciones hipotéticas ni se modifican restricciones.
 
 El alta del **30 de octubre de 2026** contrasta también `crm_expediente.id_resolucion → crm_respuesta.id_respuesta`, FK declarada con índice no único. Se crea primero la incidencia, después una respuesta con ese id y finalmente el expediente con ambos ids generados, dentro de una única transacción InnoDB. No se deduce unicidad para registros históricos ni se añaden restricciones; véase [altas-quejas.md](altas-quejas.md).
 
+## Población del suceso
+
+La v2 del **30 de octubre de 2026** utiliza la FK existente `crm_incidencia.m_zona → crm_m_zona_poblaciones.id_m_zona`. La población es opcional: un id informado debe existir con nombre disponible y se comprueba con bloqueo compartido en la transacción; omitido o null conserva zona NULL. No se transforma Lugar en un id ni se crean restricciones nuevas.
+
 ## Tabla de logs de consultas
 
 `crm_logs_consulta_incidencias.CodIncidencia` conserva el código introducido como texto y no tiene clave foránea hacia `crm_incidencia.id`. La tabla debe poder recoger consultas sin coincidencia o con un código inexistente. La única clave es el `id` del log; no se añaden restricciones a las tablas originales. La estructura se describe en [logs-consultas.md](logs-consultas.md).

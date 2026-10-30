@@ -12,7 +12,7 @@ const body = {
   nombre: 'Nombre sintético', apellidos: 'Apellidos de prueba', correo: 'prueba@example.invalid',
   direccion: 'Calle de prueba, 12', codigoPostal: '01234', telefono: '000000000', dni: 'PRUEBA123',
   fecha: '30-10-2026', hora: '14:30', linea: 7, numeroVehiculo: '0012',
-  lugar: 'Lugar que no debe persistirse', parada: 'Parada sintética', sentido: 'Dirección de prueba', motivo: 'Motivo sintético\nSegunda línea.',
+  lugar: 'Lugar sintético', parada: 'Parada sintética', sentido: 'Dirección de prueba', motivo: 'Motivo sintético\nSegunda línea.',
 };
 const attempts = [];
 let unavailable = false;
@@ -67,6 +67,8 @@ test('Swagger documenta los seis obligatorios y los opcionales como cadenas', ()
     assert.equal(schema.properties[key].type, 'string');
     assert.equal(schema.properties[key].nullable, true);
   }
+  assert.equal(schema.properties.zona.type, 'number');
+  assert.equal(schema.properties.zona.nullable, true);
 });
 
 /** El cliente recibe solo el código y el estado, y la dirección y motivo usan la regla confirmada. */
@@ -77,9 +79,10 @@ test('POST /api/quejas confirma 201 con código y prepara los campos autorizados
   assert.deepEqual(await response.json(), { codigoIncidencia: 417, estado: 'Pendiente' });
   assert.equal(attempts.length, 1);
   assert.equal(attempts[0].data.direccionPostal, 'Calle de prueba, 12 Cp: 01234');
-  assert.equal(attempts[0].data.detalle, body.motivo);
+  assert.equal(attempts[0].data.detalle, `[Lugar proporcionado por el usuario: ${body.lugar}] ${body.motivo}`);
   assert.equal('lugar' in attempts[0].data, false);
   assert.equal(attempts[0].data.linea, 7);
+  assert.equal(attempts[0].data.zona, null);
   assert.equal(attempts[0].data.numeroVehiculo, '0012');
   assert.match(attempts[0].momento, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 });
@@ -104,6 +107,7 @@ for (const [key, value] of [
   ['fecha', '31-04-2026'], ['fecha', '29-02-2025'], ['fecha', '2026-10-30'], ['fecha', 30102026],
   ['hora', '24:00'], ['hora', '12:60'], ['hora', '1:30'], ['hora', '12:30:00'],
   ['linea', '7'], ['linea', 1.5], ['linea', 2147483648], ['linea', null],
+  ['zona', '9'], ['zona', 1.5], ['zona', 2147483648], ['zona', {}],
 ]) {
   test(`Rechaza el valor no válido de ${key}: ${typeof value === 'string' && value.length > 100 ? `longitud ${value.length}` : JSON.stringify(value)}`, async () => {
     assert.equal((await crear({ ...body, [key]: value })).status, 400);
@@ -112,7 +116,7 @@ for (const [key, value] of [
 }
 
 /** No permite que el navegador fije ids, estados, canal o fechas del registro. */
-for (const [key, value] of [['id', 123], ['estado', 'cerrada'], ['via_recepcion', 'otro canal'], ['fecha_recepcion', '2000-01-01'], ['dp_idioma', 'ca'], ['id_resolucion', 999]]) {
+for (const [key, value] of [['id', 123], ['estado', 'cerrada'], ['via_recepcion', 'otro canal'], ['fecha_recepcion', '2000-01-01'], ['dp_idioma', 'ca'], ['id_resolucion', 999], ['m_zona', 9]]) {
   test(`Rechaza el campo de servidor ${key} añadido al cuerpo`, async () => {
     assert.equal((await crear({ ...body, [key]: value })).status, 400);
     assert.deepEqual(attempts, []);
@@ -130,7 +134,7 @@ test('Admite solo los seis obligatorios y conserva una dirección y motivo ausen
 /** La dirección conserva el CP como texto y no introduce etiquetas vacías. */
 for (const [direccion, codigoPostal, expected] of [[null, '01234', 'Cp: 01234'], ['Solo dirección', null, 'Solo dirección'], ['', '', null]]) {
   test(`Prepara dirección y CP opcionales: ${JSON.stringify(expected)}`, async () => {
-    assert.equal((await crear({ ...body, direccion, codigoPostal, motivo: null, dni: null })).status, 201);
+    assert.equal((await crear({ ...body, direccion, codigoPostal, lugar: null, motivo: null, dni: null })).status, 201);
     assert.equal(attempts[0].data.direccionPostal, expected);
     assert.equal(attempts[0].data.detalle, null);
     assert.equal(attempts[0].data.dni, null);
@@ -144,8 +148,30 @@ test('Recorta extremos sin convertir tipos ni perder el texto del formulario', a
   assert.equal(attempts[0].data.nombre, 'Nombre  de prueba');
   assert.equal(attempts[0].data.correo, body.correo);
   assert.equal(attempts[0].data.direccionPostal, 'Calle de prueba, 12 Cp: 01234');
-  assert.equal(attempts[0].data.detalle, 'Primera línea\nSegunda línea.');
+  assert.equal(attempts[0].data.detalle, `[Lugar proporcionado por el usuario: ${body.lugar}] Primera línea\nSegunda línea.`);
 });
+
+/** Conserva el lugar al principio, omite componentes ausentes y no interpreta HTML del usuario. */
+for (const [lugar, motivo, expected] of [
+  ['Calle de prueba', 'Motivo de prueba', '[Lugar proporcionado por el usuario: Calle de prueba] Motivo de prueba'],
+  ['Calle de prueba', null, '[Lugar proporcionado por el usuario: Calle de prueba]'],
+  [null, 'Motivo de prueba', 'Motivo de prueba'],
+  ['', '', null],
+  ['<b>Lugar</b>', 'Primera línea\nSegunda línea', '[Lugar proporcionado por el usuario: <b>Lugar</b>] Primera línea\nSegunda línea'],
+]) {
+  test(`Prepara lugar y motivo: ${JSON.stringify(expected)}`, async () => {
+    assert.equal((await crear({ ...body, lugar, motivo })).status, 201);
+    assert.equal(attempts[0].data.detalle, expected);
+  });
+}
+
+/** La población es opcional y mantiene el id numérico, incluido cero, sin convertirlo en ausencia. */
+for (const zona of [9, 0, null]) {
+  test(`Prepara la población seleccionada ${JSON.stringify(zona)}`, async () => {
+    assert.equal((await crear({ ...body, zona })).status, 201);
+    assert.equal(attempts[0].data.zona, zona);
+  });
+}
 
 /** No confunde una línea desaparecida con una confirmación ni con un fallo técnico. */
 test('Una línea que deja de estar disponible responde 400 sin confirmar el alta', async () => {
