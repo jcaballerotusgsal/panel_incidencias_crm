@@ -2,10 +2,14 @@
 
 | Documento | Contenido |
 | --- | --- |
+| [guia-funcionamiento/README.md](guia-funcionamiento/README.md) | Guía de aprendizaje: frontend, backend, API, datos, logs, Docker y recorrido del código |
 | [arquitectura.md](arquitectura.md) | Componentes, red, separación de responsabilidades y alcance |
 | [docker.md](docker.md) | Arranque, dependencias, modo compilado y resolución de problemas |
 | [buenas-practicas.md](buenas-practicas.md) | Organización del código, comentarios, pruebas y seguridad |
-| [api.md](api.md) | Endpoints y contrato de salud |
+| [ramas.md](ramas.md) | Flujo de trabajo con main, develop y ramas de cada tarea |
+| [api.md](api.md) | Endpoints de salud, consulta, alta de quejas y catálogo de líneas |
+| [formulario-queja.md](formulario-queja.md) | Formulario de queja, campos, envío y confirmación |
+| [base-de-datos/README.md](base-de-datos/README.md) | Procedencia del esquema local, campos y reglas de consulta |
 | [validacion.md](validacion.md) | Qué se pudo revisar y qué requiere ejecución real |
 | [referencias.md](referencias.md) | Documentación oficial consultada |
 

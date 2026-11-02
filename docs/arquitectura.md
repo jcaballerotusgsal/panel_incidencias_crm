@@ -1,6 +1,6 @@
 # Arquitectura
 
-## Dos servicios, no seis
+## Aplicaciones y servicios locales
 
 ```text
 Navegador
@@ -13,10 +13,10 @@ frontend:3000
 backend:3001
     Node.js + NestJS + Express
     │
-    └── Base de datos: todavía no configurada
+    └── db:3306 · MySQL 5.7.21 · copia local del CRM
 ```
 
-NestJS es el framework de la API y usa el adaptador `@nestjs/platform-express`. Node.js ejecuta el backend y también el servidor Next.js. React construye la interfaz; Tailwind genera estilos durante desarrollo/compilación. No se requiere un contenedor dedicado para Express, React o Tailwind.
+NestJS es el framework de la API y usa el adaptador `@nestjs/platform-express`. Node.js ejecuta el backend y también el servidor Next.js. React construye la interfaz; Tailwind genera estilos durante desarrollo/compilación. No se requiere un contenedor dedicado para Express, React o Tailwind. El Compose de desarrollo incluye además MySQL 5.7.21 y Adminer como herramienta local de administración.
 
 ## Rutas y comunicación
 
@@ -30,25 +30,31 @@ La regla de proxy no incorpora autenticación. Cualquier endpoint de NestJS situ
 
 ## Responsabilidades
 
-En el backend, cada dominio de negocio debe tener su módulo, controladores, servicios y DTO. Los controladores gestionan el contrato HTTP; los servicios contienen las reglas de negocio. La capa de acceso a datos se añadirá cuando se decida la base de datos.
+En el backend, cada dominio de negocio tiene su módulo, controladores, servicios y DTO. `IncidenciasModule` valida la entrada y exige código e identificador antes de devolver una fila; el repositorio enumera las columnas y parametriza la consulta. Un `LEFT JOIN` por `crm_incidencia.m_linea = crm_lineas_tusgsal_amb.id_linea_amb` añade `nom_linea_tusgsal`, con cardinalidad máxima de una correspondencia por la clave primaria del catálogo. `IncidenciasService` captura el instante de inicio y espera a que `LogsConsultasRepository` guarde el intento en `crm_logs_consulta_incidencias`, tanto con coincidencia como sin ella o ante un error de lectura. Un fallo de registro responde 503. `DatabaseModule` mantiene un pool `mysql2` con credenciales `DB_*`, lecturas e inserciones parametrizadas, tiempos de espera y cierre de conexiones. No crea objetos ni ejecuta migraciones.
 
-En el frontend, `src/app/` contiene rutas y layouts; `src/components/` contiene componentes reutilizables. La pantalla de ejemplo usa un Client Component para comprobar la API con `fetch('/api/health')`.
+Después de encontrar la pareja de datos, el repositorio lee `crm_expediente.estado` mediante su FK `id_incidencia` y devuelve `estados_expedientes`, ordenados por id de expediente. Se conserva una única incidencia con una lista de estados, aunque tenga varios expedientes; sin ellos la lista está vacía. Esta segunda lectura no se ejecuta si no coincide la pareja. Solo se devuelve el estado de los expedientes.
+
+En el frontend, `src/app/` contiene rutas y layouts; `src/components/` contiene componentes reutilizables. El formulario de inicio envía código e identificador a `POST /api/incidencias/consulta`, verifica el contrato JSON y navega a `/incidencias/resultado`. La ficha muestra 21 campos mediante una lista explícita de presentación: código, detalle, información de la incidencia, contacto, acontecimiento y fechas del registro. «Línea» presenta `nom_linea_tusgsal` en lugar del id; «Estado» muestra los estados distintos de los expedientes y «Sin expediente» cuando no los hay. Los ocho campos excluidos se documentan en [reglas-negocio.md](base-de-datos/reglas-negocio.md); la respuesta API conserva las 28 columnas originales y añade el nombre de línea y la lista de estados (30 propiedades). El frontend comprueba que solo esta lista admite elementos de texto o null. La presentación usa etiquetas legibles, fechas sin conversión de zona horaria y «No informado» para valores ausentes. Un contexto de React conserva el resultado solo en memoria, sin datos en la URL, cookies ni almacenamiento persistente. Recargar exige consultar de nuevo. El componente de ejemplo `ApiStatus` se conserva, aunque no se muestra en la página inicial.
 
 `/health` en Next.js comprueba la vida del servidor web. `/api/health` comprueba el proceso NestJS. Ninguno comprueba SQL, correo, colas ni otras dependencias externas.
 
+La cabecera compartida enlaza la consulta inicial con `/quejas/nueva`, con los 16 campos de la v2 descritos en [formulario-queja.md](formulario-queja.md). `GET /api/lineas` carga id y nombre desde `LineasModule`; `GET /api/poblaciones` hace lo mismo desde `PoblacionesModule`, con el id `id_m_zona`. Ambos catálogos se validan en el frontend y se cargan de forma independiente; población es opcional. El selector de calendario entrega un valor HTML que se transforma al contrato de fecha existente sin conversiones de zona horaria. `POST /api/quejas`, en `QuejasModule`, valida el formulario, comprueba las opciones seleccionadas y crea incidencia, respuesta y expediente mediante una sola conexión y transacción de `DatabaseService`. Guarda el id de población en `m_zona` y antepone Lugar al motivo en `m_detalle`. Recepción y registros comparten un único instante de Europe/Madrid. Se confirma COMMIT antes de devolver código y estado; un fallo intenta ROLLBACK y no entrega confirmación de alta. El formulario evita envíos simultáneos y muestra el código tras validar la respuesta 201. No persiste sus campos en almacenamiento web ni envía correo. La correspondencia completa está en [altas-quejas.md](base-de-datos/altas-quejas.md).
+
 ## Almacenamiento y separación del entorno antiguo
 
-Los volúmenes de desarrollo contienen exclusivamente dependencias, compilados o caché:
+Los volúmenes de las aplicaciones contienen dependencias, compilados o caché:
 
 - `backend_node_modules`
 - `backend_dist`
 - `frontend_node_modules`
 - `frontend_next`
 
-No hay MySQL, SQL Server, Adminer ni otro servicio de persistencia en esta plantilla. No se accede a los volúmenes ni servicios del entorno MOP31 anterior.
+El volumen independiente `crm_mysql5721_data` conserva la copia local del CRM en MySQL 5.7.21. La incorporación de la consulta no importa datos, modifica objetos ni accede al entorno PHP original. La procedencia y los límites de la revisión están en [base-de-datos/README.md](base-de-datos/README.md).
+
+La ampliación de logs añade una tabla creada manualmente en esa copia local. La búsqueda utiliza el código numérico y el identificador recortado, mientras que su log conserva las entradas recibidas. El alta autorizada del 30 de octubre escribe también en las tres tablas originales de incidencia, respuesta y expediente, sin alterar su estructura ni ejecutar migraciones. El catálogo sigue siendo de lectura. No se crea un log de consulta al dar de alta una queja.
 
 ## Producción
 
 El modo compilado genera imágenes sin bind mounts del código y las ejecuta como usuario `node`. El frontend usa la salida standalone de Next.js. El backend no publica un puerto en el host en ese modo.
 
-Esto no constituye un backoffice empresarial terminado: faltan autenticación, autorización, HTTPS, gestión de secretos, conexión a datos, observabilidad, copia de seguridad de futuros datos y revisión de seguridad del despliegue.
+El Compose compilado no configura una base de datos: conserva liveness y devuelve 503 al consultar incidencias sin `DB_*`. No se ha añadido conexión a producción. Antes de desplegar deben definirse autenticación, permisos del CRM, HTTPS, gestión de secretos, observabilidad, copias de seguridad y revisión de seguridad; el criterio provisional de código e identificador no sustituye esos controles.

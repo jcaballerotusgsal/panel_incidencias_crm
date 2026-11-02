@@ -1,0 +1,33 @@
+# Datos del CRM usados por este módulo
+
+## Procedencia y alcance
+
+Verificación de **23 de octubre de 2026** contra los metadatos del servicio local `db`, MySQL **5.7.21**, mediante `information_schema.COLUMNS` y `KEY_COLUMN_USAGE`. También se revisó exclusivamente el DDL de `asd.sql`; no se ejecutó ese archivo.
+
+La tabla existente es **`crm_incidencia`**, en singular. No existe `crm_incidencias` en la copia consultada. Se comprobaron sus 28 columnas, nulabilidad, intercalaciones y relaciones declaradas. Esto no certifica el esquema ni los permisos de otros despliegues.
+
+Al iniciar la implementación original de la consulta no existían esta carpeta ni la instantánea `docs/base-de-datos/esquema.sql` mencionada en `AGENTS.md`. Estos documentos describen únicamente el alcance comprobado; no reconstruyen ni sustituyen una instantánea completa del CRM. No contienen registros ni credenciales.
+
+Para la ampliación de líneas del **23 de octubre de 2026** se revisaron el DDL de `crm_lineas_tusgsal_amb` y la unión ya usada por `atlas_vista_incidencias` en [docs/db/esquema.sql](../db/esquema.sql). Se contrastaron columnas, nulabilidad, clave primaria y ausencia de FK de `m_linea` contra `information_schema` del MySQL local. La relación de lectura es `crm_incidencia.m_linea = crm_lineas_tusgsal_amb.id_linea_amb`. No se ejecutó ni modificó la instantánea.
+
+La ampliación de estado del **28 de octubre de 2026** contrasta `crm_expediente` con el DDL de referencia y MySQL local: `id` es clave primaria, `estado` es `varchar(20)` nullable con `utf8_spanish_ci` e `id_incidencia` tiene índice no único y FK hacia `crm_incidencia.id`. La comprobación agregada no encontró varias filas por incidencia en esa copia; el esquema sí permite esa cardinalidad. Se devuelven todos los estados relacionados tras verificar el acceso, sin añadir columnas ni actualizar estados.
+
+El **29 de octubre de 2026** se vuelven a comprobar en `information_schema` las columnas del catálogo local: `id_linea_amb` es la clave primaria `int(11)` y `nom_linea_tusgsal` permite NULL, con tipo `varchar(5)` e intercalación `utf8_general_ci`. El nuevo `GET /api/lineas` lee únicamente esas columnas para el desplegable de `/quejas/nueva`, excluyendo nombres ausentes. El nombre solicitado como `id_amb` corresponde a la columna existente `id_linea_amb`; no se renombra el esquema ni se habilita escritura de quejas.
+
+Para la v2, el **30 de octubre de 2026**, se contrasta también `crm_m_zona_poblaciones`, InnoDB, con `id_m_zona int(11)` como PK y `poblacion varchar(45)` nullable con `utf8_general_ci`. La FK existente `crm_incidencia.m_zona → crm_m_zona_poblaciones.id_m_zona` permite guardar la población elegida tras validarla. `GET /api/poblaciones` devuelve únicamente id y nombre; no se altera el catálogo ni su relación. Lugar deja de omitirse y pasa al principio de `m_detalle` según el formato solicitado, sin actualizar filas anteriores.
+
+| Documento | Alcance |
+| --- | --- |
+| [diccionario.md](diccionario.md) | Columnas devueltas por la consulta |
+| [relaciones.md](relaciones.md) | Claves foráneas verificadas y cardinalidad |
+| [vistas.md](vistas.md) | Ausencia de uso de vistas en esta consulta |
+| [logs-consultas.md](logs-consultas.md) | Tabla local de logs, estructura, creación manual y registro de intentos |
+| [altas-quejas.md](altas-quejas.md) | Alta autorizada de incidencia, respuesta y expediente, campos y transacción |
+| [reglas-negocio.md](reglas-negocio.md) | Correspondencia confirmada de los campos del formulario |
+| [pendientes.md](pendientes.md) | Aspectos no verificados y condiciones para ampliar el módulo |
+
+El backend utiliza `mysql2`, consultas parametrizadas y la configuración `DB_*` de Compose. Lee las incidencias, su catálogo y los estados de `crm_expediente`; escribe los intentos en `crm_logs_consulta_incidencias` y, por autorización del 30 de octubre, crea quejas en `crm_incidencia`, `crm_respuesta` y `crm_expediente` de forma transaccional. No hay ORM, sincronización, migraciones ni inicialización automática. La configuración debe apuntar a una copia local autorizada.
+
+La inspección de metadatos del **30 de octubre de 2026** confirma MySQL 5.7.21, las columnas de las tres tablas del alta, sus motores InnoDB y la FK `crm_expediente.id_resolucion → crm_respuesta.id_respuesta`. No encuentra triggers sobre estas tablas y confirma los permisos existentes de SELECT e INSERT sin modificar concesiones. Las discrepancias de nombres de la petición y la correspondencia confirmada por el usuario se detallan en [altas-quejas.md](altas-quejas.md). Las pruebas SQL usan filas sintéticas revertidas; no se inspeccionan registros personales reales.
+
+La ampliación solicitada el **28 de octubre de 2026** incorpora `crm_logs_consulta_incidencias` mediante un SQL de creación manual, aplicado al servicio local `db` y descrito en [logs-consultas.md](logs-consultas.md). En su creación se verificaron los cinco campos y la ausencia de filas. La petición posterior del mismo día autoriza registrar cada consulta validada; se implementa la inserción de logs sin modificar las tablas originales. Los permisos locales existentes ya permiten `INSERT` y no se cambian concesiones.

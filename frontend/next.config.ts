@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
 
+  // El servidor se enlaza a 0.0.0.0 en Docker; el navegador también accede por este loopback.
+  allowedDevOrigins: ['127.0.0.1'],
+
   /** Reenvía la API al servicio de Docker, sin exponer su nombre al navegador. */
   async rewrites() {
     return [{

@@ -19,6 +19,7 @@ Abre una terminal en la raíz del proyecto. En PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
+# Completa MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD y MYSQL_ROOT_PASSWORD en .env.
 docker compose config
 docker compose up -d --build
 docker compose logs -f
@@ -39,6 +40,12 @@ La plantilla limita las ramas mayores en `package.json`, pero hasta generar los 
 | COMPOSE_PROJECT_NAME | backoffice | Nombre del proyecto Compose |
 | FRONTEND_PORT | 3000 | Puerto de la web en el host |
 | BACKEND_PORT | 3001 | Puerto directo de la API en el host, solo desarrollo |
+| MYSQL_DATABASE | Configurar | Nombre de la copia local del CRM |
+| MYSQL_USER | Configurar | Usuario MySQL del backend; revisar sus permisos efectivos |
+| MYSQL_PASSWORD | Configurar | Contraseña local del usuario; mantener fuera del repositorio |
+| MYSQL_ROOT_PASSWORD | Configurar | Contraseña local de administración; no se pasa al backend |
+| MYSQL_PORT | 3307 | Acceso MySQL desde el host, limitado a loopback |
+| ADMINER_PORT | 8082 | Acceso a la herramienta Adminer local |
 
 Las aplicaciones reciben explícitamente variables desde Compose. El archivo `.env` raíz se usa para interpolar Compose: no se copia a la imagen ni se publica al navegador.
 
@@ -48,9 +55,19 @@ Después de cambiar los puertos, ejecuta de nuevo `docker compose up -d`. Un sim
 
 ## Edición y recarga
 
+El backend recibe `DB_HOST=db`, `DB_PORT=3306`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` desde Compose. El módulo de datos usa `mysql2` con pool de cuatro conexiones, conexión y operaciones con timeout de cinco segundos y fechas devueltas como texto. La ruta de consulta responde 503 si falta configuración, falla la lectura o no puede confirmarse la escritura del log. No se introducen variables de conexión en el frontend.
+
+El servicio `db` conserva MySQL **5.7.21** y su volumen `crm_mysql5721_data`; Adminer es solo una herramienta local. Para utilizar la consulta debe existir una copia local autorizada del CRM con `crm_incidencia`; el módulo no importa el esquema ni crea tablas. Consulta [base-de-datos/README.md](base-de-datos/README.md) para la procedencia y las discrepancias verificadas. La instantánea SQL nunca se ejecuta automáticamente.
+
+El registro requiere además `crm_logs_consulta_incidencias`, creada manualmente con [backend/sql/001-crear-logs-consulta-incidencias.sql](../backend/sql/001-crear-logs-consulta-incidencias.sql). La cuenta del backend necesita `SELECT` sobre incidencias, líneas y los campos necesarios de `crm_expediente`, e `INSERT` sobre logs; no necesita `CREATE`, `UPDATE` o `DELETE` para este flujo. La lectura de estados usa la tabla original `crm_expediente`, sin añadir columnas ni recrear relaciones. En la copia local se verificó que ya dispone de lectura e inserción, sin cambiar concesiones. Cada consulta validada espera su log y guarda la fecha de inicio del servicio en UTC. El SQL de creación no se conecta al arranque de los contenedores.
+
+El alta de quejas requiere además `INSERT` sobre `crm_incidencia`, `crm_respuesta` y `crm_expediente`, y lectura de los catálogos `crm_lineas_tusgsal_amb` y `crm_m_zona_poblaciones` para validar línea y población. Las tablas deben conservar InnoDB y sus relaciones existentes. Los permisos de la copia local ya permiten estas operaciones; no se cambian concesiones ni se necesitan dependencias nuevas para el desplegable o el calendario nativo de la v2. El alta comparte una conexión y transacción, inicializa sus fechas con texto de Europe/Madrid y deja intacta la política UTC de los logs de consulta. Consulta [altas-quejas.md](base-de-datos/altas-quejas.md).
+
 `./backend` se monta en `/app` del backend y `./frontend` en `/app` del frontend. Los `node_modules` son volúmenes de Docker para no reutilizar binarios de Windows/macOS en Linux.
 
 NestJS usa su watcher y TypeScript con polling. Next.js se ejecuta con `--webpack` y polling para facilitar la detección de cambios a través de Docker Desktop. Si cambias a Turbopack, revisa también la configuración de observación; las opciones de Webpack no se aplican a Turbopack.
+
+`next.config.ts` añade únicamente `127.0.0.1` a `allowedDevOrigins`; Next.js ya permite `localhost` por defecto. Esto permite el WebSocket de desarrollo cuando se abre la web por loopback mientras el servidor escucha en `0.0.0.0` dentro de Docker. Sin ese origen, Next.js 16.4.1 rechazaba el canal y la interfaz no terminaba de hidratarse. Se conserva la comprobación de origen y no se permiten hosts externos.
 
 Cambios de TypeScript/TSX/CSS normales no requieren reconstruir la imagen. Los cambios de Dockerfile sí:
 
@@ -92,7 +109,9 @@ docker compose exec frontend npm run lint
 docker compose exec frontend npm run test:smoke
 ```
 
-`test:smoke` se ejecuta dentro del frontend y prueba `/health`, `/api/health`, `/api` y la página inicial. No es una prueba automatizada con navegador real.
+`test:smoke` se ejecuta dentro del frontend y prueba `/health`, `/api/health`, `/api`, el formulario de consulta, `/incidencias/resultado`, los 16 campos y el calendario de `/quejas/nueva`, y los contratos de `GET /api/lineas` y `GET /api/poblaciones`. También comprueba cuerpos no válidos (400) para consulta y alta, y una consulta sintética sin coincidencia (404), por lo que requiere las tablas locales y la conexión funcionando. La consulta 404 genera un log sintético con identificador `SMOKE-SIN-COINCIDENCIA`; los 400 y los GET de catálogos no escriben. No crea quejas. No es una prueba automatizada con navegador real. `npm test` del backend utiliza datos sintéticos y dobles de acceso a datos, incluidos logs, catálogos y transacciones; no inserta registros del CRM ni logs reales.
+
+La compilación de `npm test` puede provocar reinicios del watcher de NestJS. Si aparece `EADDRINUSE` y el proceso sigue sirviendo rutas antiguas, ejecuta `docker compose restart backend` tras las pruebas y repite `test:smoke`; no elimines volúmenes.
 
 Para inspeccionar dependencias instaladas:
 

@@ -10,6 +10,14 @@
 - No crear un servidor Express adicional ni conectar el navegador directamente a una base de datos.
 - El navegador usa `/api`; Next.js reenvía a `http://localhost:3001/api`.
 
+## Ramas y entregas
+
+- `main` es la referencia estable para producción; reservar su integración para entregas validadas.
+- `develop` integra el trabajo de desarrollo y es la base de las ramas de cada tarea o sección.
+- Crear ramas con nombres descriptivos: `feat/<funcionalidad>`, `fix/<correccion>` o `chore/<tarea>`.
+- Integrar las ramas de tarea en `develop`; promover `develop` a `main` cuando corresponda preparar una entrega.
+- Seguir el flujo y las comprobaciones descritos en `docs/ramas.md`.
+
 ## Documentación
 
 Antes de modificar, consulta `docs/README.md`, `docs/arquitectura.md` y `docs/buenas-practicas.md`.

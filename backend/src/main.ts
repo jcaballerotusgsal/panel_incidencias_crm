@@ -30,7 +30,7 @@ async function bootstrap(): Promise<void> {
   if (process.env.ENABLE_SWAGGER === 'true') {
     const config = new DocumentBuilder()
       .setTitle('Backoffice API')
-      .setDescription('Base NestJS / Express. No incluye autenticación ni base de datos.')
+      .setDescription('API del backoffice con consulta de incidencias en el MySQL del CRM.')
       .setVersion('0.1.0')
       .build();
     const document = SwaggerModule.createDocument(app, config);

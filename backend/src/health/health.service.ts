@@ -6,7 +6,7 @@ export interface HealthStatus {
   service: 'backoffice-api';
   timestamp: string;
   uptimeSeconds: number;
-  database: 'not-configured';
+  database: 'not-checked';
 }
 
 @Injectable()
@@ -18,7 +18,7 @@ export class HealthService {
       service: 'backoffice-api',
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.floor(process.uptime()),
-      database: 'not-configured',
+      database: 'not-checked',
     };
   }
 }
