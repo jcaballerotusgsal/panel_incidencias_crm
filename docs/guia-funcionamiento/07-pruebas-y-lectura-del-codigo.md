@@ -4,7 +4,7 @@ Para entender un cambio conviene distinguir tres preguntas: si el código tiene 
 
 ## Qué comprueba cada comando
 
-Son los comandos documentados para desarrollo, con los servicios ya iniciados. Se muestran como referencia de aprendizaje; esta tarea de documentación no los ha vuelto a ejecutar.
+Son los comandos documentados para desarrollo, con los servicios ya iniciados. Se muestran como referencia de aprendizaje; la fecha, el resultado y los límites de cada ejecución están en [validacion.md](../validacion.md).
 
 | Comando desde la raíz | Qué comprueba | Qué no demuestra |
 | --- | --- | --- |
@@ -20,13 +20,15 @@ Los scripts concretos están en los `package.json` de [backend](../../backend/pa
 
 [health.test.cjs](../../backend/test/health.test.cjs) comprueba contratos de salud, identificación del servicio y ruta inexistente. [incidencias.test.cjs](../../backend/test/incidencias.test.cjs) cubre validación, resultados, parámetros SQL, estados, registro de intentos, espera del INSERT y errores.
 
+Las pruebas de [quejas](../../backend/test/quejas.test.cjs) y de su [repositorio](../../backend/test/quejas-repository.test.cjs) cubren DTO, detalle, población opcional, orden de inserciones y reversión ante fallos. [database-transaction.test.cjs](../../backend/test/database-transaction.test.cjs) comprueba la conexión compartida, COMMIT y ROLLBACK. Los catálogos tienen pruebas de [líneas](../../backend/test/lineas.test.cjs) y [poblaciones](../../backend/test/poblaciones.test.cjs).
+
 Estas pruebas usan datos sintéticos y *dobles* de dependencias: implementaciones de prueba que devuelven valores controlados o simulan fallos. Así se puede comprobar, por ejemplo, que un log fallido responde 503 sin depender de provocar una caída real de MySQL. No insertan filas reales en el CRM.
 
 `npm test` recompila el directorio `dist`, que observa el proceso de desarrollo. Si el watcher queda sirviendo código anterior o aparece `EADDRINUSE`, el procedimiento documentado es reiniciar solo el backend tras terminar las pruebas y repetir el smoke. No hace falta eliminar volúmenes.
 
 ## Qué hace la prueba de humo
 
-Abre [scripts/smoke.mjs](../../frontend/scripts/smoke.mjs). Comprueba `/health`, `/api/health`, `/api`, el formulario de inicio y la página de resultado. Envía un cuerpo inválido para confirmar 400 y una pareja sintética sin coincidencia para confirmar 404.
+Abre [scripts/smoke.mjs](../../frontend/scripts/smoke.mjs). Comprueba `/health`, `/api/health`, `/api`, el formulario de inicio y la página de resultado. También comprueba los 16 campos y el calendario de `/quejas/nueva`, y los contratos de ambos catálogos. Envía cuerpos inválidos de consulta y alta para confirmar 400 y una pareja sintética sin coincidencia para confirmar 404; no crea quejas.
 
 El 404 **genera un log sintético** con el identificador `SMOKE-SIN-COINCIDENCIA`; el 400 no escribe. Por eso el smoke requiere las tablas locales y permisos de lectura e inserción. No es una prueba de navegador: descargar HTML no comprueba por sí solo los clics, la hidratación o la distribución en móvil.
 
@@ -74,4 +76,4 @@ Sin cambiar ni ejecutar código, sigue el ejemplo de código `"00417"` e identif
 
 Si puedes explicar esas cinco decisiones, ya has recorrido entrada, transporte, reglas, persistencia y presentación de la aplicación.
 
-[← Docker y configuración](06-docker-y-configuracion.md) · [Siguiente: formulario pendiente →](08-formulario-queja-pendiente.md)
+[← Docker y configuración](06-docker-y-configuracion.md) · [Siguiente: crear una queja →](08-formulario-queja-pendiente.md)

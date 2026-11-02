@@ -13,7 +13,7 @@ Módulo de consulta del CRM con aplicaciones separadas del entorno PHP original 
 
 Estas son las ramas elegidas para la plantilla, no una afirmación de que todas sean la última versión mayor disponible. Las versiones concretas se resuelven en la primera instalación y quedan registradas en los archivos `package-lock.json`.
 
-**Alcance:** formulario de consulta por código y DNI, correo o código AMB, API NestJS de consulta y registro de intentos, y ficha de resultados con 21 campos visibles, incluidos el nombre de línea y los estados de los expedientes. El criterio de acceso exige que coincidan ambos datos. Incluye Swagger en desarrollo, recarga y configuración de compilación; quedan por definir la autenticación del CRM, permisos generales, HTTPS y despliegue público.
+**Alcance:** consulta por código y DNI, correo o código AMB, ficha con 21 campos visibles, incluidos el nombre de línea y los estados de los expedientes, y logs de intentos. Incluye un formulario de nueva queja que crea incidencia, respuesta y expediente mediante una transacción de la API NestJS y devuelve su código. La consulta exige que coincidan ambos datos. Incluye Swagger en desarrollo, recarga y configuración de compilación; quedan por definir la autenticación del CRM, permisos generales, HTTPS y despliegue público.
 
 ## 1. Arrancar en Windows / PowerShell
 
@@ -52,6 +52,8 @@ Cada nuevo inicio del contenedor de desarrollo vuelve a ejecutar la instalación
 | Salud del servidor Next.js | `http://localhost:3000/health` |
 
 La pantalla inicial envía código e identificador a `POST /api/incidencias/consulta` y navega a `/incidencias/resultado`. Devuelve la fila de `crm_incidencia` que coincide o «No se han encontrado los datos». La tabla tiene nombre singular en el esquema local verificado. El resultado solo se conserva en memoria: recargar la página exige consultar de nuevo.
+
+«Crear una queja» abre `/quejas/nueva`: carga líneas y poblaciones por `GET /api/lineas` y `GET /api/poblaciones`, ofrece un calendario para la fecha, envía el formulario a `POST /api/quejas` y muestra el código después de confirmar el alta. La población se guarda por id y Lugar precede al motivo en el detalle. Los campos y su correspondencia están en [docs/formulario-queja.md](docs/formulario-queja.md).
 
 El servicio MySQL debe contener una copia local autorizada del CRM; no se importa ni modifica automáticamente. La configuración y procedencia se describen en [docs/base-de-datos/README.md](docs/base-de-datos/README.md). `/api/health` comprueba únicamente el proceso NestJS y declara `database: "not-checked"`.
 

@@ -11,10 +11,13 @@ Este proyecto usa el directorio `src/app/`. Un `page.tsx` define la pantalla de 
 | [app/layout.tsx](../../frontend/src/app/layout.tsx) | Documento HTML en español, estilos y proveedor compartido de la consulta |
 | [app/page.tsx](../../frontend/src/app/page.tsx) | `/`: cabecera, formulario de consulta y pie |
 | [app/incidencias/resultado/page.tsx](../../frontend/src/app/incidencias/resultado/page.tsx) | `/incidencias/resultado`: página que contiene la ficha |
+| [app/quejas/nueva/page.tsx](../../frontend/src/app/quejas/nueva/page.tsx) | `/quejas/nueva`: página con el formulario de alta |
 | [app/incidencias/page.tsx](../../frontend/src/app/incidencias/page.tsx) | `/incidencias`: ejemplo con tres incidencias ficticias |
 | [app/health/route.ts](../../frontend/src/app/health/route.ts) | `GET /health`: comprueba el servidor Next.js |
 
 Los archivos `.tsx` no son direcciones que el navegador deba solicitar. Next.js transforma esta organización de carpetas en rutas como `/` o `/incidencias/resultado`.
+
+El formulario [formulario-queja.tsx](../../frontend/src/components/formulario-queja.tsx) carga líneas y poblaciones por separado, valida sus respuestas y envía `POST /api/quejas`. El calendario entrega `aaaa-mm-dd`, convertido a `dd-mm-aaaa` para la API; los selectores envían ids numéricos. Tras un 201 válido se limpian los campos y se muestra el código creado. Su recorrido se explica en el [capítulo 08](08-formulario-queja-pendiente.md).
 
 ## Componentes de servidor y de cliente
 

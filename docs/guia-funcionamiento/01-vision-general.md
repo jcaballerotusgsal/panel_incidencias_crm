@@ -63,6 +63,6 @@ El [capítulo 04](04-api-y-consulta.md) sigue estos pasos archivo por archivo, i
 
 En esta versión hay consulta individual, ficha con 21 campos visibles, nombre de línea, estados de expedientes y logs de los intentos. También existe `/incidencias`, una pantalla de demostración con datos escritos en el código; no es un listado del CRM.
 
-La coincidencia de código e identificador es el criterio de acceso provisional de la consulta. No hay un inicio de sesión general del CRM ni una pantalla de administración de logs. El modo compilado tampoco configura una conexión a producción. La [nueva queja](08-formulario-queja-pendiente.md) sigue en otra rama y todavía no guarda reclamaciones.
+La coincidencia de código e identificador es el criterio de acceso provisional de la consulta. No hay un inicio de sesión general del CRM ni una pantalla de administración de logs. El modo compilado tampoco configura una conexión a producción. La [nueva queja](08-formulario-queja-pendiente.md) está integrada: envía el formulario a la API y guarda incidencia, respuesta y expediente en una transacción sobre la copia local autorizada.
 
 [Siguiente: frontend →](02-frontend.md)

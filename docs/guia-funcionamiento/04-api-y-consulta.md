@@ -31,11 +31,14 @@ Las direcciones de esta tabla son las que se pueden solicitar al mismo origen de
 | `GET /api` | `AppController` | Nombre, versión y ruta de salud de la API |
 | `GET /api/health` | `HealthController` | Estado del proceso NestJS; no comprueba SQL |
 | `POST /api/incidencias/consulta` | `IncidenciasController` | Incidencia y log del intento, o error |
+| `GET /api/lineas` | `LineasController` | Catálogo de ids y nombres de líneas |
+| `GET /api/poblaciones` | `PoblacionesController` | Catálogo de ids y nombres de poblaciones |
+| `POST /api/quejas` | `QuejasController` | Código y estado inicial tras confirmar el alta |
 | `GET /api/docs` | Swagger, si está habilitado | Documentación interactiva de la API |
 
 Por ejemplo, `/api/health` devuelve `status`, `service`, `timestamp`, `uptimeSeconds` y `database: "not-checked"`. Este último valor explica que una respuesta de salud correcta no garantiza una búsqueda correcta en MySQL. `/health` pertenece a Next.js y no pasa por NestJS.
 
-No hay un endpoint integrado de listado del CRM, de consulta de logs ni de creación de quejas. `GET /api/lineas` corresponde al [trabajo de quejas pendiente](08-formulario-queja-pendiente.md), no a esta base de `develop`.
+No hay un endpoint integrado de listado del CRM ni de consulta de logs. La creación de quejas y sus dos catálogos están integrados; el [capítulo 08](08-formulario-queja-pendiente.md) explica ese flujo y [api.md](../api.md) contiene su contrato completo. El alta devuelve 201 con código y estado `Pendiente`, 400 ante entrada u opción inválida y 503 si no se puede confirmar la operación.
 
 ## Qué hace la reescritura de Next.js
 

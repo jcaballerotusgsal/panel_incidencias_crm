@@ -38,6 +38,8 @@ En el frontend, `src/app/` contiene rutas y layouts; `src/components/` contiene 
 
 `/health` en Next.js comprueba la vida del servidor web. `/api/health` comprueba el proceso NestJS. Ninguno comprueba SQL, correo, colas ni otras dependencias externas.
 
+La cabecera compartida enlaza la consulta inicial con `/quejas/nueva`, con los 16 campos de la v2 descritos en [formulario-queja.md](formulario-queja.md). `GET /api/lineas` carga id y nombre desde `LineasModule`; `GET /api/poblaciones` hace lo mismo desde `PoblacionesModule`, con el id `id_m_zona`. Ambos catálogos se validan en el frontend y se cargan de forma independiente; población es opcional. El selector de calendario entrega un valor HTML que se transforma al contrato de fecha existente sin conversiones de zona horaria. `POST /api/quejas`, en `QuejasModule`, valida el formulario, comprueba las opciones seleccionadas y crea incidencia, respuesta y expediente mediante una sola conexión y transacción de `DatabaseService`. Guarda el id de población en `m_zona` y antepone Lugar al motivo en `m_detalle`. Recepción y registros comparten un único instante de Europe/Madrid. Se confirma COMMIT antes de devolver código y estado; un fallo intenta ROLLBACK y no entrega confirmación de alta. El formulario evita envíos simultáneos y muestra el código tras validar la respuesta 201. No persiste sus campos en almacenamiento web ni envía correo. La correspondencia completa está en [altas-quejas.md](base-de-datos/altas-quejas.md).
+
 ## Almacenamiento y separación del entorno antiguo
 
 Los volúmenes de las aplicaciones contienen dependencias, compilados o caché:
@@ -49,7 +51,7 @@ Los volúmenes de las aplicaciones contienen dependencias, compilados o caché:
 
 El volumen independiente `crm_mysql5721_data` conserva la copia local del CRM en MySQL 5.7.21. La incorporación de la consulta no importa datos, modifica objetos ni accede al entorno PHP original. La procedencia y los límites de la revisión están en [base-de-datos/README.md](base-de-datos/README.md).
 
-La ampliación de logs añade una tabla creada manualmente en esa copia local y escritura exclusiva de intentos en ella. El frontend conserva el texto de los campos; la búsqueda utiliza el código numérico y el identificador recortado, mientras que el log conserva las entradas recibidas. Las incidencias, el catálogo y el esquema original de referencia mantienen su estructura.
+La ampliación de logs añade una tabla creada manualmente en esa copia local. La búsqueda utiliza el código numérico y el identificador recortado, mientras que su log conserva las entradas recibidas. El alta autorizada del 30 de octubre escribe también en las tres tablas originales de incidencia, respuesta y expediente, sin alterar su estructura ni ejecutar migraciones. El catálogo sigue siendo de lectura. No se crea un log de consulta al dar de alta una queja.
 
 ## Producción
 

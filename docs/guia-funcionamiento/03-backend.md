@@ -14,7 +14,7 @@ El punto de entrada es [main.ts](../../backend/src/main.ts). La función `bootst
 
 Después escucha en `0.0.0.0:3001` dentro del contenedor. `0.0.0.0` significa que acepta conexiones en sus interfaces; el puerto que puede abrirse desde Windows depende de Compose.
 
-[AppModule](../../backend/src/app.module.ts) es el módulo raíz. Importa `HealthModule` e `IncidenciasModule`, y registra `AppController` para la información básica de la API.
+[AppModule](../../backend/src/app.module.ts) es el módulo raíz. Importa `HealthModule`, `IncidenciasModule`, `LineasModule`, `PoblacionesModule` y `QuejasModule`, y registra `AppController` para la información básica de la API. Los dos catálogos son de lectura; `QuejasModule` separa validación, preparación de campos y escritura transaccional como explica el [capítulo 08](08-formulario-queja-pendiente.md).
 
 ## Las responsabilidades de cada clase
 
@@ -70,6 +70,8 @@ Si no se encuentra una incidencia, el servicio lanza `NotFoundException` despué
 `DatabaseService` utiliza `mysql2/promise`. El pool admite hasta cuatro conexiones, una cola de hasta veinte solicitudes, conexión y operaciones con límite de cinco segundos, `multipleStatements: false` y fechas como cadenas con `dateStrings: true`.
 
 `read` ejecuta una consulta fija con valores separados y devuelve filas. `insert` exige que se confirme exactamente una fila insertada. Ambos convierten los fallos internos del driver en mensajes públicos de servicio no disponible; no publican SQL ni identificadores.
+
+`transaction` reserva una sola conexión para las lecturas de validación y las tres inserciones del alta. Confirma con COMMIT antes de devolver el resultado; ante un fallo intenta ROLLBACK y libera la conexión, o la destruye si falla la reversión. El alta no usa el INSERT independiente del log de consultas.
 
 Crear el pool no importa el esquema ni ejecuta migraciones. Si falta configuración `DB_*`, el servicio conserva un pool nulo: la salud puede funcionar y las consultas devolverán 503. Al apagarse NestJS, `onModuleDestroy` cierra el pool.
 

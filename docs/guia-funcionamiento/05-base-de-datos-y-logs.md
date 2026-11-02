@@ -8,12 +8,16 @@ Los nombres se conservan tal como existen. La tabla de incidencias utilizada es 
 
 | Tabla | Uso actual | Operación del módulo |
 | --- | --- | --- |
-| `crm_incidencia` | Datos de la incidencia, contacto y acontecimiento | SELECT condicionado por código e identificador |
-| `crm_lineas_tusgsal_amb` | Nombre legible de la línea de la incidencia | LEFT JOIN durante la lectura |
-| `crm_expediente` | Estados de los expedientes relacionados con la incidencia encontrada | SELECT posterior por `id_incidencia` |
+| `crm_incidencia` | Datos de la incidencia, contacto y acontecimiento | SELECT condicionado por código e identificador; INSERT al crear una queja |
+| `crm_lineas_tusgsal_amb` | Catálogo de líneas y nombre legible de la incidencia | LEFT JOIN en la consulta y SELECT del catálogo/validación del alta |
+| `crm_m_zona_poblaciones` | Poblaciones seleccionables por `id_m_zona` | SELECT del catálogo y validación de la zona opcional |
+| `crm_respuesta` | Respuesta inicial vinculada a la nueva queja | INSERT transaccional después de la incidencia |
+| `crm_expediente` | Estados de los expedientes de cada incidencia | SELECT por `id_incidencia`; INSERT transaccional después de la respuesta |
 | `crm_logs_consulta_incidencias` | Historial de intentos de consulta | INSERT de un log por petición validada |
 
 No se lee `crm_users` ni se devuelven contraseñas. La ficha tampoco consulta actuaciones o respuestas del CRM. La «Zona» muestra el valor de `m_zona`: este flujo no incorpora un JOIN para obtener el nombre de la población.
+
+El alta confirma una transacción con incidencia → respuesta → expediente; utiliza los ids generados por esa conexión y las FKs existentes. Guarda `id_m_zona` en `m_zona` y antepone Lugar al motivo con el formato `[Lugar proporcionado por el usuario: LUGAR] Motivo`. No crea un log de búsqueda al dar de alta. Las constantes y columnas se detallan en [altas-quejas.md](../base-de-datos/altas-quejas.md).
 
 ## Cómo se encuentra la incidencia
 

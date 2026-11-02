@@ -1,41 +1,60 @@
-# 08 · El formulario de queja pendiente de integrar
+# 08 · Cómo se crea una queja
 
-Este capítulo describe el trabajo preparado antes de esta guía en `feat/formulario-nueva-queja`. **No forma parte de la base `develop` `bf825c8` que se está documentando.** Sus archivos no estarán presentes al recorrer esta rama de documentación; se enumeran como referencia del trabajo separado, sin enlaces a rutas de código ausentes.
-
-El objetivo de esa fase es tener una página con la estructura de la queja. La única consulta añadida es la carga del catálogo para el desplegable de líneas; no se implementa el envío ni el guardado de reclamaciones.
+El formulario de `/quejas/nueva` está integrado desde la v2. Su página compone la estructura; React carga catálogos, recoge campos y envía JSON. NestJS valida y crea las filas relacionadas del CRM. Este archivo conserva su nombre histórico para mantener los enlaces de la guía.
 
 ## La página y sus campos
-
-La ruta preparada es `/quejas/nueva`, con enlace desde la cabecera y estos grupos:
 
 | Grupo | Campos | Obligatorios |
 | --- | --- | --- |
 | Datos personales | Nombre, Apellidos, Dirección, Código postal, Teléfono, Correo electrónico y DNI | Nombre, Apellidos y Correo electrónico |
-| Datos del suceso | Fecha, Hora, Línea, Núm. vehículo, Lugar, Parada y Sentido | Fecha, Hora y Línea |
-| Reclamación | Motivo de reclamación | Ninguno en esta fase |
+| Datos del suceso | Fecha, Hora, Línea, Núm. vehículo, Población, Lugar, Parada y Sentido | Fecha, Hora y Línea |
+| Reclamación | Motivo de reclamación | Ninguno |
 
-Son 15 campos y seis obligatorios. Fecha utiliza el formato `dd-mm-aaaa`; Hora, `hh:mm`. El código postal es texto para conservar ceros iniciales. Las comprobaciones HTML de formato no son todavía reglas de creación del CRM.
+Son 16 campos y seis obligatorios. El código postal es texto para conservar ceros iniciales. El calendario HTML entrega `aaaa-mm-dd`; el componente invierte sus partes para enviar `dd-mm-aaaa`, sin convertir zonas horarias. Hora utiliza `hh:mm`. El DTO vuelve a validar tipos, longitudes y fechas reales aunque el navegador ya haya validado.
 
-## Por qué se añade un endpoint de líneas
+## Los catálogos y sus ids
 
-Para mostrar nombres reales, la estructura preparada hace `GET /api/lineas`. El backend lee exclusivamente `id_linea_amb` y `nom_linea_tusgsal` de `crm_lineas_tusgsal_amb`. El nombre real de la clave es `id_linea_amb`, aunque la petición inicial la denominaba `id_amb`.
+`GET /api/lineas` devuelve `id_linea_amb` y `nom_linea_tusgsal` desde `crm_lineas_tusgsal_amb`. En una opción sintética `<option value="7">B1</option>`, la persona ve `B1` y la API recibe el número `7`. La clave real es `id_linea_amb`, aunque la petición inicial la llamaba `id_amb`.
 
-En una opción sintética como `<option value="7">B1</option>`, `B1` es lo que ve la persona y `7` es el valor seleccionado. Dos nombres iguales pueden conservar ids diferentes. La consulta excluye nombres nulos o vacíos y los ordena por nombre e id; no inventa opciones si falla la carga.
+`GET /api/poblaciones` devuelve `id_m_zona` y `poblacion` desde `crm_m_zona_poblaciones`. El selector muestra el nombre y envía el id numérico como `zona`. Es opcional: sin selección envía null. Ambos catálogos excluyen nombres nulos o vacíos, se ordenan por nombre e id y conservan ids distintos aunque se repitan nombres.
 
-El componente valida la respuesta y contempla carga, catálogo vacío y error. El GET no recibe datos personales ni crea logs de consulta de incidencias. No se conecta el navegador directamente a MySQL: se reutiliza la misma cadena Next.js → NestJS → MySQL.
+El frontend valida ambos JSON y representa carga, catálogo vacío y error por separado. Sin líneas disponibles bloquea el envío; sin poblaciones permite enviar con zona null. Los GET no reciben datos personales ni crean logs de búsqueda. Se mantiene la cadena navegador → Next.js → NestJS → MySQL.
 
-## Cómo se reparte ese trabajo
+## Del botón a la transacción
 
-| Archivos preparados en la otra tarea | Responsabilidad |
+1. `FormularioQueja` recoge los campos con `FormData`, convierte ids y fecha y envía `POST /api/quejas`.
+2. Un bloqueo evita envíos simultáneos y los campos se deshabilitan mientras se espera, con timeout de 30 segundos.
+3. `CrearQuejaDto` recorta textos y valida el cuerpo; rechaza estados, ids generados y fechas de recepción impuestos por el cliente.
+4. `QuejasService` fija una sola fecha/hora de recepción en Europe/Madrid y prepara dirección postal y detalle.
+5. `QuejasRepository` usa una transacción de `DatabaseService`: comprueba línea y población seleccionadas y ejecuta los tres INSERT en orden.
+6. Tras COMMIT, la API devuelve 201 con `{ "codigoIncidencia": 417, "estado": "Pendiente" }`, ejemplo sintético.
+7. El frontend valida esa respuesta, limpia el formulario y muestra el código. «Crear otra queja» vuelve a presentar campos vacíos.
+
+## Qué guarda cada tabla
+
+| Paso | Tabla | Valores y relación |
+| --- | --- | --- |
+| 1 | `crm_incidencia` | Formulario, canal `formulario web`, tipo `Queja`, población en `m_zona` y fechas del servidor |
+| 2 | `crm_respuesta` | `id_incidencia` anterior, `estado = pendiente`, `estado2 = abierta` y medio `correo electronico` |
+| 3 | `crm_expediente` | `id_incidencia` del primer paso, `id_resolucion` del segundo y estado `Pendiente` |
+
+Dirección y CP se unen como `dirección Cp: código postal` en `dp_correoPostal`. Lugar precede al motivo en `m_detalle` como `[Lugar proporcionado por el usuario: LUGAR] Motivo`, sin añadir paréntesis. Sin Lugar se guarda solo el motivo; sin ambos, NULL. Apellidos sigue siendo el apellido del solicitante. Las constantes, nulos y fechas se detallan en [altas-quejas.md](../base-de-datos/altas-quejas.md).
+
+Las tres inserciones comparten conexión y transacción. Un fallo intenta ROLLBACK; no se confirma un alta parcial. Una opción ya no disponible responde 400. Un fallo que impide confirmar el alta responde 503. Si se pierde la respuesta en red, la queja podría haberse guardado: no hay deduplicación entre peticiones distintas ni reenvío automático.
+
+## Archivos para seguir el recorrido
+
+| Archivo | Responsabilidad |
 | --- | --- |
-| `frontend/src/app/quejas/nueva/page.tsx` | Estructura de la página |
-| `frontend/src/components/formulario-queja.tsx` | Campos, catálogo y prevención del envío |
-| `frontend/src/lib/lineas.ts` | Tipo y comprobación del JSON del catálogo |
-| `backend/src/lineas/` | Módulo, controlador, servicio y repositorio de lectura |
-| `backend/test/lineas.test.cjs` | Pruebas del contrato y fallos del catálogo |
+| [page.tsx](../../frontend/src/app/quejas/nueva/page.tsx) | Estructura de la página |
+| [formulario-queja.tsx](../../frontend/src/components/formulario-queja.tsx) | Campos, catálogos, calendario, envío y confirmación |
+| [lineas.ts](../../frontend/src/lib/lineas.ts), [poblaciones.ts](../../frontend/src/lib/poblaciones.ts), [quejas.ts](../../frontend/src/lib/quejas.ts) | Tipos y comprobación del JSON externo |
+| [crear-queja.dto.ts](../../backend/src/quejas/crear-queja.dto.ts) | Validación de entrada |
+| [quejas.controller.ts](../../backend/src/quejas/quejas.controller.ts) | Endpoint POST y delegación |
+| [quejas.service.ts](../../backend/src/quejas/quejas.service.ts) | Preparación de campos y recepción |
+| [quejas.repository.ts](../../backend/src/quejas/quejas.repository.ts) | Validación de opciones y tres INSERT |
+| [database.service.ts](../../backend/src/database/database.service.ts) | Conexión compartida, COMMIT y ROLLBACK |
 
-El botón de envío está deshabilitado y el formulario cancela `submit`, incluido el programático. No hay un POST de creación ni datos personales guardados en almacenamiento web. Los nombres HTML de los campos no establecen todavía su correspondencia de escritura con las columnas del CRM.
-
-Antes del alta habrá que confirmar los destinos de los campos, los obligatorios de la base, las reglas de negocio y el uso histórico de `dp_apellidos`. La guía deberá actualizarse cuando esta funcionalidad se integre en `develop`; hasta entonces, no debe confundirse este GET pendiente con los endpoints integrados del [capítulo 04](04-api-y-consulta.md).
+El alta no envía correo: `medio` es un dato inicial de respuesta. Tampoco crea un log de consulta ni guarda campos en almacenamiento web. Puedes consultar después la incidencia con su código y correo o DNI. Los contratos están en [API](../api.md) y las comprobaciones ejecutadas en [validación](../validacion.md).
 
 [← Pruebas y lectura del código](07-pruebas-y-lectura-del-codigo.md) · [Volver al índice](README.md)
