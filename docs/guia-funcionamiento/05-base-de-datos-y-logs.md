@@ -27,13 +27,13 @@ El SQL está en [IncidenciasRepository.findByCredentials](../../backend/src/inci
 WHERE i.id = ? AND (
   TRIM(i.dp_dni) = ?
   OR TRIM(i.dp_email) = ?
-  OR TRIM(i.dp_apellidos) = ?
+  OR (? = 1 AND TRIM(i.dp_apellidos) = ?)
 )
 ```
 
-La lista de parámetros es `[id, identificador, identificador, identificador]`. Para el código sintético `"00417"`, el servicio busca el número `417`, aunque guarda el texto original en el log. El identificador se recorta en sus extremos antes de comparar; el SQL recorta también los extremos de las columnas. No hace coincidencias parciales ni elimina espacios interiores o signos.
+La lista de parámetros es `[id, identificador, identificador, permiteCodigoAmb, identificador]`. El cuarto vale 1 solo si el identificador empieza por QU, sin distinguir mayúsculas; en otro caso vale 0 y deshabilita la comparación con apellidos. Para el código sintético `"00417"`, el servicio busca el número `417`, aunque guarda el texto original en el log. El identificador se recorta en sus extremos antes de comparar; el SQL recorta también los extremos de las columnas. No hace coincidencias parciales ni elimina espacios interiores o signos.
 
-Los paréntesis hacen que siempre deba coincidir el id **y** uno de los tres identificadores. `dp_apellidos` se compara con el código AMB por la regla indicada para este CRM; no significa que cualquier apellido sea un código AMB ni autoriza a reinterpretar datos históricos.
+Los paréntesis hacen que siempre deba coincidir el id **y** uno de los identificadores habilitados. Por ejemplo, un apellido sintético `Apellidos de prueba` no permite acceder por ese campo; `QU-PRUEBA` habilita la comparación, pero solo da acceso si coincide completamente con `dp_apellidos` y con el id indicado. DNI y correo funcionan sin QU. Esta regla no reescribe datos históricos.
 
 Los `?` son marcadores de valores. El SQL permanece fijo y los datos se entregan separados al driver mediante `execute`, en lugar de concatenarse en el texto SQL. No se pueden usar esos parámetros para elegir arbitrariamente tablas o columnas desde el navegador.
 
