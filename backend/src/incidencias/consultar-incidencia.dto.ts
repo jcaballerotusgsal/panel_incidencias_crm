@@ -27,7 +27,7 @@ export class ConsultarIncidenciaDto {
   })
   codigoIncidencia!: number | string;
 
-  @ApiProperty({ description: 'DNI, correo o código AMB', maxLength: 45 })
+  @ApiProperty({ description: 'DNI, correo o código AMB con prefijo QU (sin distinguir mayúsculas); los apellidos sin ese prefijo no sirven como código AMB.', maxLength: 45 })
   @IsString()
   @MaxLength(45)
   @Matches(/\S/, { message: 'El identificador no puede estar vacío.' })

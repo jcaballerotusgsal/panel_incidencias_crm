@@ -12,7 +12,7 @@ const { LogsConsultasRepository } = require('../dist/incidencias/logs-consultas.
 // Datos enteramente sintéticos: no se insertan ni modifican registros del CRM.
 const fixture = {
   id: 417, fecha_recepcion: '2026-10-23 10:00:00', via_recepcion: 'Prueba',
-  atendido_por: null, dp_nombre: 'Nombre de prueba', dp_apellidos: 'AMB-PRUEBA',
+  atendido_por: null, dp_nombre: 'Nombre de prueba', dp_apellidos: 'QU-PRUEBA',
   dp_dni: 'PRUEBA123', dp_sexo: null, dp_idioma: null, dp_telefono: null,
   dp_email: 'prueba@example.invalid', dp_correoPostal: null, m_tipo: null,
   m_fechaAcontecimiento_date: null, m_hora: null, m_linea: 777, nom_linea_tusgsal: 'N99', m_vehiculo: null,
@@ -25,6 +25,8 @@ const fixture = {
 const consultas = [];
 const logs = [];
 let failLog = false;
+let incidenciaGuardada = fixture;
+let lecturasExpedientes = 0;
 const logRepository = {
   /** Captura una escritura sintética o simula su fallo sin acceder a MySQL. */
   async registrar(fechaHoraPeticion, codigoIncidencia, identificador, valida) {
@@ -33,17 +35,25 @@ const logRepository = {
   },
 };
 
-const repository = {
-  /** Simula únicamente la coincidencia de id e identificador, incluidos fallos del servicio. */
-  async findByCredentials(id, identificador) {
+const repository = new IncidenciasRepository({
+  /** Simula MySQL con filas sintéticas y los parámetros del repositorio real; nunca accede al CRM. */
+  async read(sql, values) {
+    if (sql.includes('FROM crm_expediente')) {
+      lecturasExpedientes += 1;
+      return incidenciaGuardada.estados_expedientes.map(estado => ({ estado }));
+    }
+    const [id, identificador, correo, permiteCodigoAmb, codigoAmb] = values;
     consultas.push({ id, identificador });
     if (identificador === 'SERVICIO-NO-DISPONIBLE') {
       throw new ServiceUnavailableException('No se ha podido consultar la incidencia. Inténtalo de nuevo.');
     }
-    return id === fixture.id && [fixture.dp_dni, fixture.dp_email, fixture.dp_apellidos].includes(identificador)
-      ? fixture : null;
+    const campos = [[incidenciaGuardada.dp_dni, identificador], [incidenciaGuardada.dp_email, correo]];
+    if (permiteCodigoAmb === 1) campos.push([incidenciaGuardada.dp_apellidos, codigoAmb]);
+    const coincide = campos.some(([guardado, recibido]) => typeof guardado === 'string'
+      && guardado.trim().toLowerCase() === recibido.toLowerCase());
+    return id === incidenciaGuardada.id && coincide ? [incidenciaGuardada] : [];
   },
-};
+});
 class TestModule {}
 Module({
   controllers: [IncidenciasController],
@@ -70,7 +80,10 @@ before(async () => {
 after(async () => { if (app) await app.close(); });
 
 /** Aísla los registros y fallos simulados de cada petición de prueba. */
-beforeEach(() => { consultas.length = 0; logs.length = 0; failLog = false; });
+beforeEach(() => {
+  consultas.length = 0; logs.length = 0; failLog = false;
+  incidenciaGuardada = fixture; lecturasExpedientes = 0;
+});
 
 /**
  * Envía cuerpos sintéticos al endpoint de pruebas sin acceder a MySQL.
@@ -99,10 +112,46 @@ for (const campo of ['dp_dni', 'dp_email', 'dp_apellidos']) {
   });
 }
 
+/** Un apellido coincidente sin prefijo QU no concede acceso y se registra como consulta fallida. */
+for (const apellido of ['Apellidos de prueba', 'AMB-PRUEBA', 'AQU-PRUEBA']) {
+  test(`No permite acceder por apellido sin prefijo QU: ${apellido}`, async () => {
+    incidenciaGuardada = { ...fixture, dp_apellidos: apellido };
+    const response = await consultar({ codigoIncidencia: fixture.id, identificador: ` ${apellido} ` });
+    assert.equal(response.status, 404);
+    assert.equal((await response.json()).message, 'No se han encontrado los datos.');
+    assert.equal(lecturasExpedientes, 0);
+    assert.equal(logs.length, 1);
+    assert.equal(logs[0].valida, false);
+    assert.equal(logs[0].identificador, ` ${apellido} `);
+  });
+}
+
+/** El prefijo AMB no distingue mayúsculas, conserva el log y requiere coincidencia completa. */
+for (const identificador of ['qu-prueba', 'Qu-PRUEBA', 'qU-prueba']) {
+  test(`Admite prefijo QU sin distinguir mayúsculas: ${identificador}`, async () => {
+    const response = await consultar({ codigoIncidencia: fixture.id, identificador: ` ${identificador} ` });
+    assert.equal(response.status, 200);
+    assert.equal(logs[0].valida, true);
+    assert.equal(logs[0].identificador, ` ${identificador} `);
+    assert.equal(lecturasExpedientes, 1);
+  });
+}
+
+/** DNI y correo siguen permitiendo el acceso cuando la incidencia contiene apellidos ordinarios. */
+for (const campo of ['dp_dni', 'dp_email']) {
+  test(`Conserva el acceso por ${campo} con apellidos ordinarios`, async () => {
+    incidenciaGuardada = { ...fixture, dp_apellidos: 'Apellidos de prueba' };
+    assert.equal((await consultar({ codigoIncidencia: fixture.id, identificador: fixture[campo] })).status, 200);
+    assert.equal(logs[0].valida, true);
+  });
+}
+
 /** La pareja incorrecta registra el intento fallido y conserva el mensaje público existente. */
 for (const body of [
   { codigoIncidencia: 418, identificador: fixture.dp_dni },
   { codigoIncidencia: fixture.id, identificador: 'NO-COINCIDE' },
+  { codigoIncidencia: fixture.id, identificador: 'QU-OTRA' },
+  { codigoIncidencia: 418, identificador: fixture.dp_apellidos },
   { codigoIncidencia: fixture.id, identificador: "' OR 1=1 --" },
 ]) {
   test('La pareja incorrecta responde 404 sin revelar cuál de los datos existe', async () => {
@@ -213,13 +262,13 @@ test('El repositorio parametriza id y los tres identificadores', async () => {
   };
   assert.equal(await new IncidenciasRepository(database).findByCredentials(417, identificador), null);
   assert.equal(calls.length, 1);
-  assert.match(calls[0].sql, /WHERE i\.id = \? AND \(TRIM\(i\.dp_dni\) = \? OR TRIM\(i\.dp_email\) = \? OR TRIM\(i\.dp_apellidos\) = \?\)/);
+  assert.match(calls[0].sql, /WHERE i\.id = \? AND \(\s*TRIM\(i\.dp_dni\) = \? OR TRIM\(i\.dp_email\) = \?\s*OR \(\? = 1 AND TRIM\(i\.dp_apellidos\) = \?\)\s*\)/);
   assert.match(calls[0].sql, /LEFT JOIN crm_lineas_tusgsal_amb AS l ON i\.m_linea = l\.id_linea_amb/);
   assert.match(calls[0].sql, /l\.nom_linea_tusgsal AS nom_linea_tusgsal/);
   assert.match(calls[0].sql, /LIMIT 1/);
   assert.doesNotMatch(calls[0].sql, /SELECT\s+\*/i);
   assert.ok(!calls[0].sql.includes(identificador));
-  assert.deepEqual(calls[0].values, [417, identificador, identificador, identificador]);
+  assert.deepEqual(calls[0].values, [417, identificador, identificador, 0, identificador]);
 });
 
 /** Lee estados solo después de la coincidencia y conserva todos los expedientes, sin prioridad inferida. */

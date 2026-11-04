@@ -264,3 +264,18 @@ La integración de `feat/formulario-nueva-queja` (`9c39d25`) en `develop` combin
 La primera espera de salud local obtiene 500 mientras el backend reiniciado termina su instalación y arranque; los logs muestran `ECONNREFUSED`. Una vez disponible, la salud directa y mediante el proxy responde 200 y el smoke pasa. No se modifica el frontend para ocultar ese estado transitorio.
 
 La validación compilada usa un proyecto Docker separado y sin conexión al CRM: no crea quejas ni accede a producción. Sus contenedores y red se retiran al terminar, sin borrar volúmenes. La prueba local de desarrollo mantiene únicamente el efecto sintético del smoke documentado. Los avisos de dependencias de npm durante el build siguen pendientes de revisión; no se modifican versiones ni lockfiles automáticamente. Esta comprobación resuelve el pendiente de construcción y arranque compilado de la v2; conserva los límites de autenticación, permisos generales, HTTPS, idempotencia, pruebas de alta persistente y despliegue real.
+
+## Ajuste del código AMB en apellidos — 2 de noviembre de 2026
+
+La rama `fix/ajustes-codigo-apellido` parte de `develop` en `598a542`. La consulta solo habilita la comparación con `dp_apellidos` cuando el identificador recortado empieza por QU, sin distinguir mayúsculas. El repositorio pasa ese permiso como parámetro 0/1 del SQL fijo y conserva la coincidencia completa del identificador y el id de incidencia. DNI y correo no requieren QU. Un apellido sin ese prefijo que no coincida por los otros campos responde 404, registra `Valida = 0` y no lee expedientes. El DTO no rechaza globalmente identificadores sin QU; su descripción Swagger explica la condición.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Tipos del backend y frontend | Correctos |
+| Compilación NestJS y pruebas del backend | 168 correctas: diez regresiones nuevas para apellidos sin QU, variantes de mayúsculas, DNI/correo y código o incidencia no coincidentes |
+| SQL del repositorio sobre fuentes derivadas sintéticas en MySQL 5.7.21 | 14 casos correctos: prefijo, igualdad completa, id, espacios, intercalación existente, DNI/correo, nulos y parámetros de entrada; ninguna lectura de registros del CRM ni escritura |
+| Lint del frontend | Sin errores; permanece la advertencia previa de `postcss.config.mjs` |
+| Smoke a través de Next.js | Correcto después de reiniciar el backend y esperar su estado healthy; solo conserva el log sintético habitual de la consulta 404 |
+| Guía de funcionamiento | 137 enlaces relativos existentes, bloques cerrados y UTF-8 sin caracteres de sustitución |
+
+Las pruebas HTTP usan el repositorio real con una dependencia de datos simulada; la comprobación adicional ejecuta su SQL en MySQL sobre SELECT sintéticos, conservando las condiciones y las intercalaciones de comparación. No se realiza una consulta positiva con incidencias personales reales. No se cambia el esquema, el contenido histórico, las dependencias, los lockfiles ni el frontend. No se repiten navegador, construcción de imágenes o despliegue; no se ha confirmado ninguna regla adicional del formato AMB aparte del prefijo solicitado.

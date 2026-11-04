@@ -17,7 +17,7 @@ Metadatos locales verificados el **23 de octubre de 2026**. `id` es clave primar
 
 Las columnas de texto usan `utf8_spanish_ci`, excepto `dp_dni`, que usa `utf8_general_ci`. Se conservan sus comparaciones; no se fuerzan otras intercalaciones ni mayúsculas/minúsculas. `m_zona` tiene un índice no único y una clave foránea; los identificadores personales no son claves únicas.
 
-El formulario relaciona código con `id`, DNI con `dp_dni`, correo con `dp_email` y código AMB con `dp_apellidos`, según la instrucción del usuario. No se interpreta todo apellido histórico como un código AMB válido.
+El formulario relaciona código con `id`, DNI con `dp_dni`, correo con `dp_email` y código AMB con `dp_apellidos`, según la instrucción del usuario. Desde el **2 de noviembre de 2026**, la comparación con `dp_apellidos` solo se habilita si el identificador recortado empieza por QU, sin distinguir mayúsculas, y exige coincidencia completa. No se interpreta todo apellido histórico como un código AMB válido ni se transforma su contenido.
 
 La respuesta enumera estas 28 columnas de una sola fila, incluidos valores nulos, y añade `nom_linea_tusgsal` desde el catálogo de líneas y `estados_expedientes` desde sus expedientes (30 propiedades). Las fechas se serializan como texto de MySQL, sin introducir conversiones de zona horaria. Los campos de actualización no se interpretan como actualización automática.
 
