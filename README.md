@@ -140,4 +140,6 @@ Consulta [docs/docker.md](docs/docker.md). Requiere los dos lockfiles y no se co
 
 ## Documentación y validación
 
+Los avisos de alta y cambio de estado están implementados mediante una cola y un trigger de MySQL, con un consumidor separado para Microsoft 365. El envío permanece desactivado hasta configurar la aplicación de Entra. Consulta [notificaciones de correo](docs/notificaciones-correo.md) para activar el servicio y cambiar remitente/destinatario interno.
+
 Para entender la aplicación paso a paso, empieza por la [guía de funcionamiento](docs/guia-funcionamiento/README.md). [docs/README.md](docs/README.md) reúne el resto de documentos. Las revisiones iniciales y las comprobaciones posteriores de la consulta local se recogen por separado en [docs/validacion.md](docs/validacion.md).

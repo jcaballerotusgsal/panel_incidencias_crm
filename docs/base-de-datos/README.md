@@ -23,6 +23,7 @@ Para la v2, el **30 de octubre de 2026**, se contrasta también `crm_m_zona_pobl
 | [vistas.md](vistas.md) | Ausencia de uso de vistas en esta consulta |
 | [logs-consultas.md](logs-consultas.md) | Tabla local de logs, estructura, creación manual y registro de intentos |
 | [altas-quejas.md](altas-quejas.md) | Alta autorizada de incidencia, respuesta y expediente, campos y transacción |
+| [notificaciones-correo.md](notificaciones-correo.md) | Cola auxiliar y trigger autorizados para avisos de alta y cambio de estado |
 | [reglas-negocio.md](reglas-negocio.md) | Correspondencia confirmada de los campos del formulario |
 | [pendientes.md](pendientes.md) | Aspectos no verificados y condiciones para ampliar el módulo |
 
@@ -31,3 +32,7 @@ El backend utiliza `mysql2`, consultas parametrizadas y la configuración `DB_*`
 La inspección de metadatos del **30 de octubre de 2026** confirma MySQL 5.7.21, las columnas de las tres tablas del alta, sus motores InnoDB y la FK `crm_expediente.id_resolucion → crm_respuesta.id_respuesta`. No encuentra triggers sobre estas tablas y confirma los permisos existentes de SELECT e INSERT sin modificar concesiones. Las discrepancias de nombres de la petición y la correspondencia confirmada por el usuario se detallan en [altas-quejas.md](altas-quejas.md). Las pruebas SQL usan filas sintéticas revertidas; no se inspeccionan registros personales reales.
 
 La ampliación solicitada el **28 de octubre de 2026** incorpora `crm_logs_consulta_incidencias` mediante un SQL de creación manual, aplicado al servicio local `db` y descrito en [logs-consultas.md](logs-consultas.md). En su creación se verificaron los cinco campos y la ausencia de filas. La petición posterior del mismo día autoriza registrar cada consulta validada; se implementa la inserción de logs sin modificar las tablas originales. Los permisos locales existentes ya permiten `INSERT` y no se cambian concesiones.
+
+## Avisos de alta y estado — 4 de noviembre de 2026
+
+Se verifica MySQL 5.7.21 y se crean manualmente `crm_notificaciones_correo` y el trigger AFTER UPDATE de `crm_expediente.estado`, por petición expresa del usuario. No se alteran las tablas originales, sus vistas ni sus definidores; no se cambian permisos. El alta web registra dos avisos antes de COMMIT y los cambios de estado los registran mediante trigger. El consumidor usa SELECT/UPDATE en la nueva cola; los detalles y pruebas sintéticas revertidas están en [notificaciones-correo.md](notificaciones-correo.md). La ausencia de triggers descrita en la inspección del 30 de octubre corresponde a la situación anterior a esta ampliación.

@@ -3,6 +3,45 @@
 name: ${COMPOSE_PROJECT_NAME:-backoffice}
 
 services:
+  correo-worker:
+    profiles: [notificaciones]
+    build:
+      context: ./backend
+      target: production
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 45s
+    command: [node, dist/notificaciones/worker.js]
+    environment:
+      NODE_ENV: production
+      # Vacías por defecto: configurar solo un destino autorizado.
+      DB_HOST: ${DB_HOST:-}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-}
+      DB_USER: ${DB_USER:-}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      NOTIFICATIONS_ENABLED: ${NOTIFICATIONS_ENABLED:-false}
+      NOTIFICATIONS_INTERNAL_TO: ${NOTIFICATIONS_INTERNAL_TO:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_TRANSPORT: ${MAIL_TRANSPORT:-microsoft365}
+      NOTIFICATIONS_CONSULTATION_URL: ${NOTIFICATIONS_CONSULTATION_URL:-}
+      NOTIFICATIONS_INTERVAL_MS: ${NOTIFICATIONS_INTERVAL_MS:-5000}
+      NOTIFICATIONS_MAX_ATTEMPTS: ${NOTIFICATIONS_MAX_ATTEMPTS:-5}
+      MS365_TENANT_ID: ${MS365_TENANT_ID:-}
+      MS365_CLIENT_ID: ${MS365_CLIENT_ID:-}
+      MS365_CLIENT_SECRET: ${MS365_CLIENT_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      backend:
+        condition: service_healthy
+
   backend:
     build:
       context: ./backend

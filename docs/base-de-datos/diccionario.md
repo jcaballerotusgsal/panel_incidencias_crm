@@ -74,3 +74,7 @@ Metadatos locales contrastados el **30 de octubre de 2026** para el alta de quej
 | `respuesta_created_date`, `respuesta_date_updated` | `datetime`, nullable, default `CURRENT_TIMESTAMP`, sin `ON UPDATE` |
 
 El alta proporciona expresamente todas estas columnas salvo el id generado. Los textos iniciales y el uso de dirección, motivo, idioma vacío y fechas se describen en [altas-quejas.md](altas-quejas.md); no se cambian tipos ni defaults. Las nuevas filas usan `dp_apellidos` como apellidos del formulario; la regla histórica de consulta por AMB no se aplica para transformar su contenido al crear.
+
+## Cola crm_notificaciones_correo
+
+Tabla auxiliar creada manualmente el 4 de noviembre de 2026. Conserva una fila por evento/destinatario, referencias lógicas a incidencia y expediente, estados capturados, correo, intentos, reserva y resultado del envío. Su estructura, UTC, índices y nulabilidad se describen en [notificaciones-correo.md](notificaciones-correo.md). No se devuelve desde la consulta pública ni se añaden columnas a su JSON.

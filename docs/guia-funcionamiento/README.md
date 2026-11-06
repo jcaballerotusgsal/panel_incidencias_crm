@@ -16,6 +16,7 @@ La guía se escribió sobre `develop` en `bf825c8` el **29 de octubre de 2026**.
 | [06 · Docker y configuración](06-docker-y-configuracion.md) | Contenedores, puertos, variables, volúmenes, recarga y modo compilado |
 | [07 · Pruebas y lectura del código](07-pruebas-y-lectura-del-codigo.md) | Cómo comprobar cada capa, observar peticiones y localizar dónde cambiar algo |
 | [08 · Crear una queja](08-formulario-queja-pendiente.md) | Catálogos, calendario, envío a la API y guardado de las tres filas relacionadas |
+| [Avisos por correo](../notificaciones-correo.md) | Cola, trigger del CRM PHP, Microsoft 365 y cambios de direcciones |
 
 Si quieres entender primero una acción concreta, empieza por el [recorrido de una consulta](04-api-y-consulta.md) y abre los archivos en el orden indicado allí.
 

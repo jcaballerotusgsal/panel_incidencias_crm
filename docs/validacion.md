@@ -279,3 +279,31 @@ La rama `fix/ajustes-codigo-apellido` parte de `develop` en `598a542`. La consul
 | Guía de funcionamiento | 137 enlaces relativos existentes, bloques cerrados y UTF-8 sin caracteres de sustitución |
 
 Las pruebas HTTP usan el repositorio real con una dependencia de datos simulada; la comprobación adicional ejecuta su SQL en MySQL sobre SELECT sintéticos, conservando las condiciones y las intercalaciones de comparación. No se realiza una consulta positiva con incidencias personales reales. No se cambia el esquema, el contenido histórico, las dependencias, los lockfiles ni el frontend. No se repiten navegador, construcción de imágenes o despliegue; no se ha confirmado ninguna regla adicional del formato AMB aparte del prefijo solicitado.
+
+## Avisos de alta y estado — 4 de noviembre de 2026
+
+La rama `feat/notificaciones-correo-quejas` parte de `develop` en `a36e502`. El alta registra dos avisos en su transacción y un trigger manual registra cambios de `crm_expediente.estado` del CRM PHP. El consumidor independiente permite Microsoft Graph y SMTP, con reservas y reintentos por destinatario. La configuración local conserva el envío desactivado hasta autorizar una aplicación de Microsoft 365.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Tipos del backend | Correctos |
+| Compilación NestJS y pruebas del backend | 197 correctas, sin fallos; incluye altas con fallo de cola, reservas, reintentos, token, apagado y proveedor |
+| Microsoft Graph simulado, sin acceso externo | Mensajes independientes, token reutilizado/invalidation tras 401, permisos 403, límites 429/Retry-After, fallo 503 y validación de destinatario correctos |
+| SMTP real sobre loopback de la prueba | Dos mensajes con destinatarios e identificadores independientes, capturados por un servidor de prueba sin entrega externa |
+| Preflight MySQL local | Versión exacta 5.7.21, tablas InnoDB, binlog desactivado, cola y triggers de expediente ausentes antes de instalar |
+| Instalación manual de SQL 002 y 003 | Correcta con la cuenta administradora local tras rechazo CREATE de la cuenta de API; sin cambios de permisos, vistas ni columnas originales |
+| SQL real de altas y trigger | Cinco escenarios sintéticos: avisos de alta, cambio de estado, estado sin cambios, NULL y ROLLBACK; todas las filas revertidas |
+| SQL real de reservas en MySQL 5.7.21 | Orden por incidencia/destinatario, reintento diferido, dirección interna fijada, recuperación de reserva caducada y rechazo de token anterior correctos; todo revertido |
+| Tipos y lint del frontend | Tipos correctos, sin errores de lint; conserva la advertencia previa de `postcss.config.mjs` |
+| Smoke a través de Next.js tras arrancar/recrear la API | Correcto: consulta, resultado, formulario y catálogos; solo genera el log sintético habitual del 404 |
+| Ambos Compose con el perfil notificaciones | `config --quiet` correcto, sin imprimir secretos |
+| Imagen de desarrollo y arranque de correo-worker | Construcción correcta y proceso iniciado; logs confirman envío desactivado, sin puerto publicado para el worker |
+| Documentación | 218 enlaces relativos existentes y UTF-8 comprobados en 29 documentos |
+
+Se actualizan manifiesto y lockfile con Nodemailer 10.3.1 y sus tipos 8.0.2. Se mantienen Node.js 24, NestJS 11, MySQL 5.7.21 y las versiones del frontend. El consumidor no instala paquetes ni comparte otro watcher; se detiene junto con backend al cambiar dependencias.
+
+No se han enviado correos externos ni se han registrado credenciales/permisos en Microsoft 365. Queda pendiente configurar tenant, aplicación, secreto y autorización del buzón por el administrador, y comprobar un envío real autorizado. No se modifica PHP, no se notifican cambios históricos ni se conservan filas sintéticas de estas pruebas SQL; las secuencias autoincrementales pueden avanzar. No se repiten navegador ni construcción/arranque de imágenes de producción en esta rama. Antes de ampliar el uso siguen pendientes autenticación, despliegue, conservación, monitorización y gestión administrativa de avisos fallidos. La entrega al buzón y la ausencia absoluta de duplicados no están garantizadas por una aceptación del proveedor.
+
+## Preparación de la integración en develop — 6 de noviembre de 2026
+
+Antes de guardar e integrar las notificaciones se repiten tipos de backend/frontend, compilación y las 197 pruebas del backend, lint y smoke a través de Next.js: todo correcto, con la advertencia previa de postcss.config.mjs. Las pruebas no envían correos externos ni crean quejas reales. Se mantiene .env fuera de Git; la comprobación del envío real con Microsoft 365 queda fuera de esta integración.

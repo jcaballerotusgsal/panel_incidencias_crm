@@ -80,17 +80,17 @@ docker compose up -d --build
 Detén el servicio afectado antes de tocar sus dependencias para evitar instalaciones concurrentes. Ejemplo con un paquete real que decidas incorporar, sustituyendo `NOMBRE_PAQUETE`:
 
 ```bash
-docker compose stop backend
+docker compose stop backend correo-worker
 docker compose run --rm --no-deps --entrypoint npm backend install NOMBRE_PAQUETE
 docker compose up -d backend
 ```
 
-El `--entrypoint npm` evita ejecutar primero la instalación automática del entrypoint. Este comando modifica `backend/package.json` y `backend/package-lock.json` en el host.
+Detener también `correo-worker` es necesario porque comparte `backend_node_modules` y los compilados. No ejecuta instalaciones ni otro watcher. Tras instalar y arrancar backend, recrea/reinicia el consumidor si estaba en uso. El `--entrypoint npm` evita ejecutar primero la instalación automática del entrypoint. Este comando modifica `backend/package.json` y `backend/package-lock.json` en el host.
 
 Si has modificado `package.json` manualmente y el lockfile quedó desajustado, regenera con:
 
 ```bash
-docker compose stop backend
+docker compose stop backend correo-worker
 docker compose run --rm --no-deps --entrypoint npm backend install
 docker compose up -d backend
 ```
@@ -163,6 +163,21 @@ Para regresar a desarrollo:
 docker compose -f docker-compose.prod.yml down
 docker compose up -d --build
 ```
+
+## Consumidor opcional de correo
+
+El perfil `notificaciones` incorpora `correo-worker`, sin puertos publicados y con envío desactivado por defecto. Antes de actualizar la API deben existir la cola y el trigger de creación **manual** indicados en [datos de notificaciones](base-de-datos/notificaciones-correo.md). La instalación no forma parte de Compose ni de `npm run worker`.
+
+La configuración completa, los permisos de Microsoft 365 y el cambio de direcciones están en [notificaciones-correo.md](notificaciones-correo.md). Sus variables se pasan exclusivamente al worker. Para comprobar su arranque sin enviar, mantener `NOTIFICATIONS_ENABLED=false`:
+
+```bash
+docker compose --profile notificaciones up -d --build correo-worker
+docker compose logs --tail 30 correo-worker
+```
+
+En desarrollo comparte compilados/dependencias en lectura; su entrypoint ejecuta Node directamente, sin `npm ci` ni watcher. Tras recompilar cambios, reiniciar `correo-worker`. Detenerlo junto con backend antes de modificar dependencias. Para cambiar `.env`, recrearlo con `up -d --no-deps --force-recreate correo-worker`, porque `restart` no actualiza el entorno.
+
+El Compose compilado también ofrece el perfil, con la misma imagen de producción del backend y sin volumen de código. Las variables `DB_*` del consumidor están vacías por defecto: no añaden acceso a producción. Antes de utilizarlo, su base debe ser el mismo destino autorizado que usa la API y contar con los SQL revisados/aplicados manualmente. La API compilada conserva su configuración inicial sin DB; esta ampliación no configura un despliegue real.
 
 ## Antes de publicar
 

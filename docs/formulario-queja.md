@@ -37,7 +37,7 @@ El frontend comprueba el contrato recibido, cancela la lectura al salir de la p�
 
 El backend crea `crm_incidencia`, `crm_respuesta` y `crm_expediente` en una transacción. Solo después del COMMIT devuelve HTTP 201 con el código y estado `Pendiente`. El frontend comprueba ese contrato, limpia el formulario y muestra la confirmación. «Crear otra queja» presenta campos vacíos; el enlace a consulta no incluye datos personales ni el código en la URL. No se guardan datos en cookies o almacenamiento web.
 
-Un 400 conserva los campos para corregirlos. Los demás fallos conservan lo escrito y avisan de que no se pudo confirmar el envío: un timeout o una respuesta perdida no permiten asegurar desde el navegador que la transacción no se haya completado. No hay deduplicación entre peticiones distintas ni envío de correo; `medio = 'correo electronico'` solo inicializa el registro de respuesta.
+Un 400 conserva los campos para corregirlos. Los demás fallos conservan lo escrito y avisan de que no se pudo confirmar el envío: un timeout o una respuesta perdida no permiten asegurar desde el navegador que la transacción no se haya completado. No hay deduplicación entre peticiones distintas. El alta registra dos avisos de correo en la misma transacción y un consumidor separado los envía cuando está configurado; el código mostrado confirma el alta, no la entrega del correo. `medio = 'correo electronico'` sigue siendo un dato inicial de respuesta; el aviso se genera explícitamente desde el repositorio. Véase [notificaciones-correo.md](notificaciones-correo.md).
 
 ## Correspondencia confirmada
 

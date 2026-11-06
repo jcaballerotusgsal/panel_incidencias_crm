@@ -92,6 +92,14 @@ export class DatabaseService implements OnModuleDestroy {
       connection = session;
       await session.beginTransaction();
       const transaction: DatabaseTransaction = {
+        /** Actualiza filas y devuelve su número sin exponer errores internos del driver. */
+        async update(sql: string, parameters: readonly SqlParameter[]): Promise<number> {
+          const [result] = await session.execute<ResultSetHeader>({ sql, timeout: 5000 }, [...parameters]);
+          if (!Number.isSafeInteger(result.affectedRows) || result.affectedRows < 0) {
+            throw new Error('No se ha podido confirmar la actualización.');
+          }
+          return result.affectedRows;
+        },
         /** Ejecuta el SELECT fijo con valores separados y timeout en esta misma conexión. */
         async read<R extends RowDataPacket>(sql: string, parameters: readonly SqlParameter[]): Promise<R[]> {
           const [rows] = await session.execute<R[]>({ sql, timeout: 5000 }, [...parameters]);

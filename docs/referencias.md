@@ -14,3 +14,12 @@ Consultadas durante la preparación del proyecto el 14 de octubre de 2026. Las p
 - Docker Compose, red: https://docs.docker.com/compose/how-tos/networking/
 - Docker, publicación de puertos: https://docs.docker.com/engine/network/port-publishing/
 - npm ci y lockfiles: https://docs.npmjs.com/cli/v11/commands/npm-ci/
+
+## Notificaciones — consultadas el 4 de noviembre de 2026
+
+- [Microsoft Graph: sendMail, permisos y aceptación 202](https://learn.microsoft.com/en-us/graph/api/user-sendmail?view=graph-rest-1.0).
+- [Microsoft Entra: OAuth client credentials](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow).
+- [Exchange Online: Application RBAC y ámbito de buzones](https://learn.microsoft.com/en-us/exchange/permissions-exo/application-rbac).
+- [Nodemailer: SMTP y TLS](https://nodemailer.com/smtp).
+- [MySQL 5.7: restricciones de programas almacenados y triggers](https://dev.mysql.com/doc/mysql-reslimits-excerpt/5.7/en/stored-program-restrictions.html).
+- [Patrón transactional outbox y posibilidad de duplicados](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html).

@@ -6,6 +6,13 @@ export type SqlParameter = string | number | null;
 /** Operaciones disponibles en la misma conexión, sin permitir confirmar desde el repositorio. */
 export interface DatabaseTransaction {
   /**
+   * Ejecuta un UPDATE fijo dentro de la conexión transaccional.
+   * @param sql Sentencia definida en el repositorio, sin SQL del cliente.
+   * @param parameters Valores separados del texto SQL.
+   * @returns Número de filas afectadas; cero permite detectar una reserva caducada.
+   */
+  update(sql: string, parameters: readonly SqlParameter[]): Promise<number>;
+  /**
    * Lee con SQL fijo y parámetros separados dentro de la transacción actual.
    * @param sql SELECT definido por el backend.
    * @param parameters Valores recibidos y validados, nunca nombres de tablas o columnas.
