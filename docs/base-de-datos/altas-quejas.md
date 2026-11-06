@@ -6,7 +6,7 @@ La v1 funcional se guarda después en `0a8d018`, `feat: guardar v1 del formulari
 
 ## Procedencia y alcance verificado
 
-Se contrastan `information_schema` y el DDL de referencia, sin ejecutar el volcado. MySQL local es **5.7.21**; las tres tablas y el catálogo usan InnoDB. No existe `crm_incidencias`: se utiliza `crm_incidencia`. La inspección no encuentra triggers sobre estas tablas y confirma los permisos de lectura e inserción existentes de la cuenta del backend, sin cambiar concesiones.
+Se contrastan `information_schema` y el DDL de referencia, sin ejecutar el volcado. MySQL local es **5.7.21**; las tres tablas y el catálogo usan InnoDB. No existe `crm_incidencias`: se utiliza `crm_incidencia`. La inspección del 30 de octubre no encontraba triggers sobre estas tablas y confirmó los permisos de lectura e inserción existentes de la cuenta del backend, sin cambiar concesiones. La ampliación del 4 de noviembre añade manualmente el trigger de estado y la cola descritos en [notificaciones-correo.md](notificaciones-correo.md).
 
 `crm_respuesta.id_incidencia` referencia `crm_incidencia.id`. `crm_expediente` tiene FKs a la incidencia por `id_incidencia` y a la respuesta por `id_resolucion → crm_respuesta.id_respuesta`. No se añaden relaciones, índices, columnas ni restricciones.
 
@@ -68,7 +68,7 @@ Los dos estados mencionados en la petición corresponden a las columnas distinta
 
 El servicio captura una sola fecha/hora al entrar tras validar el DTO y la expresa en **Europe/Madrid**, incluyendo su horario de verano. Ese texto se usa en todos los campos de registro; `fecha` de respuesta usa solo el día. La zona del servidor MySQL local sigue siendo UTC y no se modifica. `DATETIME` conserva el texto recibido sin zona; este flujo no depende de los defaults ni añade actualización automática. Los logs de búsqueda conservan su política previa UTC.
 
-`DatabaseService.transaction` obtiene una conexión, inicia BEGIN, comprueba línea y población seleccionadas con bloqueo compartido, ejecuta los tres INSERT y confirma COMMIT. Una población no disponible responde 400 antes de insertar. Sin zona se omite esa segunda lectura y se conserva la compatibilidad con los cuerpos de la v1. Cada inserción debe devolver una única fila y un id autoincremental seguro. Ante errores intenta ROLLBACK; libera la conexión o la destruye si falla la reversión. La respuesta HTTP 201 solo se entrega después del COMMIT, con el código y `Pendiente`.
+`DatabaseService.transaction` obtiene una conexión, inicia BEGIN, comprueba línea y población seleccionadas con bloqueo compartido, ejecuta los tres INSERT del CRM, registra dos avisos de alta en `crm_notificaciones_correo` y confirma COMMIT. Los avisos comparten el mismo UUID de evento, con una fila para el correo del formulario y otra para el destinatario interno. Si falla cualquiera de estas inserciones, se revierte la operación completa. Una población no disponible responde 400 antes de insertar. Sin zona se omite esa segunda lectura y se conserva la compatibilidad con los cuerpos de la v1. Cada inserción debe devolver una única fila y un id autoincremental seguro. Ante errores intenta ROLLBACK; libera la conexión o la destruye si falla la reversión. La respuesta HTTP 201 solo se entrega después del COMMIT, con el código y `Pendiente`.
 
 No se usa `MAX(id)` ni una lectura de ids compartida: se utilizan los `insertId` de esa conexión. Las secuencias autoincrementales pueden dejar huecos al revertir una operación, sin que existan filas parciales. No se resetean secuencias.
 

@@ -36,3 +36,7 @@ La v2 del **30 de octubre de 2026** utiliza la FK existente `crm_incidencia.m_zo
 ## Tabla de logs de consultas
 
 `crm_logs_consulta_incidencias.CodIncidencia` conserva el código introducido como texto y no tiene clave foránea hacia `crm_incidencia.id`. La tabla debe poder recoger consultas sin coincidencia o con un código inexistente. La única clave es el `id` del log; no se añaden restricciones a las tablas originales. La estructura se describe en [logs-consultas.md](logs-consultas.md).
+
+## Eventos y destinatarios de correo
+
+`crm_notificaciones_correo.id_incidencia` e `id_expediente` son referencias lógicas a los ids originales, sin nuevas FK. La cola conserva dos filas por evento, diferenciadas por tipo de destinatario, y admite varios eventos y expedientes por incidencia. El trigger sobre `crm_expediente.estado` utiliza la FK existente `id_incidencia` para leer el correo; no deduce un estado global entre expedientes. Véase [notificaciones-correo.md](notificaciones-correo.md).

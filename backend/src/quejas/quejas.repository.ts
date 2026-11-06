@@ -2,15 +2,16 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import type { RowDataPacket } from 'mysql2/promise';
 import { DatabaseService } from '../database/database.service';
 import type { NuevaQueja } from './nueva-queja';
+import { NotificacionesRepository } from '../notificaciones/notificaciones.repository';
 
 /** Inserta incidencia, respuesta y expediente como una única unidad de trabajo. */
 @Injectable()
 export class QuejasRepository {
-  /** @param database Pool del backend con lectura del catálogo e inserción en las tres tablas locales. */
-  constructor(private readonly database: DatabaseService) {}
+  /** @param database Pool del backend. @param notificaciones Avisos de alta, confirmados en la misma transacción. */
+  constructor(private readonly database: DatabaseService, private readonly notificaciones: NotificacionesRepository) {}
 
   /**
-   * Verifica línea y población seleccionadas y crea las tres filas en su orden de claves foráneas.
+   * Verifica las opciones, crea las tres filas relacionadas y registra dos avisos antes de COMMIT.
    * @param datos Campos ya validados, con dirección postal y detalle preparados por el servicio.
    * @param momento Fecha/hora de recepción del servidor, idéntica para todos los campos de registro.
    * @returns Id de la incidencia solo después de confirmar la transacción completa.
@@ -69,10 +70,11 @@ export class QuejasRepository {
           respuesta_created_date, respuesta_date_updated
         ) VALUES (?, 'pendiente', ?, 'correo electronico', NULL, '', 'abierta', '', ?, ?)
       `, [incidenciaId, momento.slice(0, 10), momento, momento]);
-      await transaction.insert(`
+      const expedienteId = await transaction.insert(`
         INSERT INTO crm_expediente (id_incidencia, id_resolucion, estado)
         VALUES (?, ?, 'Pendiente')
       `, [incidenciaId, respuestaId]);
+      await this.notificaciones.registrarAlta(transaction, incidenciaId, expedienteId, datos.correo);
       return incidenciaId;
     });
   }

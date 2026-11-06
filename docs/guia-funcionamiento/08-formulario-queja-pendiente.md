@@ -26,7 +26,7 @@ El frontend valida ambos JSON y representa carga, catálogo vacío y error por s
 2. Un bloqueo evita envíos simultáneos y los campos se deshabilitan mientras se espera, con timeout de 30 segundos.
 3. `CrearQuejaDto` recorta textos y valida el cuerpo; rechaza estados, ids generados y fechas de recepción impuestos por el cliente.
 4. `QuejasService` fija una sola fecha/hora de recepción en Europe/Madrid y prepara dirección postal y detalle.
-5. `QuejasRepository` usa una transacción de `DatabaseService`: comprueba línea y población seleccionadas y ejecuta los tres INSERT en orden.
+5. `QuejasRepository` usa una transacción de `DatabaseService`: comprueba línea y población seleccionadas, ejecuta los tres INSERT del CRM en orden y registra dos avisos de correo antes de COMMIT.
 6. Tras COMMIT, la API devuelve 201 con `{ "codigoIncidencia": 417, "estado": "Pendiente" }`, ejemplo sintético.
 7. El frontend valida esa respuesta, limpia el formulario y muestra el código. «Crear otra queja» vuelve a presentar campos vacíos.
 
@@ -52,9 +52,9 @@ Las tres inserciones comparten conexión y transacción. Un fallo intenta ROLLBA
 | [crear-queja.dto.ts](../../backend/src/quejas/crear-queja.dto.ts) | Validación de entrada |
 | [quejas.controller.ts](../../backend/src/quejas/quejas.controller.ts) | Endpoint POST y delegación |
 | [quejas.service.ts](../../backend/src/quejas/quejas.service.ts) | Preparación de campos y recepción |
-| [quejas.repository.ts](../../backend/src/quejas/quejas.repository.ts) | Validación de opciones y tres INSERT |
+| [quejas.repository.ts](../../backend/src/quejas/quejas.repository.ts) | Validación de opciones, tres INSERT del CRM y avisos de alta |
 | [database.service.ts](../../backend/src/database/database.service.ts) | Conexión compartida, COMMIT y ROLLBACK |
 
-El alta no envía correo: `medio` es un dato inicial de respuesta. Tampoco crea un log de consulta ni guarda campos en almacenamiento web. Puedes consultar después la incidencia con su código y correo o DNI. Los contratos están en [API](../api.md) y las comprobaciones ejecutadas en [validación](../validacion.md).
+El alta registra dos avisos de correo en su transacción; un proceso independiente los envía por Microsoft Graph cuando se configura Microsoft 365. Si después se cambia `crm_expediente.estado` desde el CRM PHP, un trigger registra los avisos correspondientes sin modificar PHP. `medio` continúa siendo un dato de la respuesta. La activación y las direcciones temporales se explican en [notificaciones de correo](../notificaciones-correo.md). Tampoco se crea un log de consulta ni se guardan campos en almacenamiento web. Puedes consultar después la incidencia con su código y correo o DNI. Los contratos están en [API](../api.md) y las comprobaciones ejecutadas en [validación](../validacion.md).
 
 [← Pruebas y lectura del código](07-pruebas-y-lectura-del-codigo.md) · [Volver al índice](README.md)

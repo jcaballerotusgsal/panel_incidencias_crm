@@ -103,3 +103,20 @@ test('Sin pool la transacción responde 503 sin empezar la operación', async ()
   await assert.rejects(database.transaction(async () => { throw new Error('No debería ejecutarse.'); }), (error) => error.getStatus() === 503);
   assert.deepEqual(calls, []);
 });
+
+/** Las actualizaciones condicionales pueden afectar cero filas cuando una reserva ha caducado. */
+for (const affectedRows of [0, 1]) {
+  test(`La transacción admite UPDATE con ${affectedRows} filas y conserva parámetros`, async () => {
+    const { database, calls } = fixture({ result: { affectedRows } });
+    assert.equal(await database.transaction(tx => tx.update('UPDATE fijo WHERE id = ?', [123])), affectedRows);
+    assert.deepEqual(calls[2].values, [123]);
+    assert.deepEqual(calls.slice(-2), ['commit', 'release']);
+  });
+}
+
+/** Un resultado anómalo del driver no puede confirmar una actualización. */
+test('Revierte un UPDATE cuyo número de filas es inválido', async () => {
+  const { database, calls } = fixture({ result: { affectedRows: -1 } });
+  await assert.rejects(database.transaction(tx => tx.update('UPDATE fijo', [])));
+  assert.deepEqual(calls.slice(-2), ['rollback', 'release']);
+});

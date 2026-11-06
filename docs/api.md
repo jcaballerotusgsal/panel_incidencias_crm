@@ -112,7 +112,7 @@ La v2 añade `zona` como número entero opcional: se envía `id_m_zona`, no el n
 | `linea` | Número entero en el rango INT firmado; debe existir con nombre disponible en el catálogo |
 | `zona` | Opcional, entero en el rango INT firmado o null; si se informa, debe existir con nombre disponible en `crm_m_zona_poblaciones` |
 
-La línea y, si se informa, la población se comprueban dentro de la misma transacción con bloqueo compartido. Se insertan, en este orden, `crm_incidencia`, `crm_respuesta` y `crm_expediente`, enlazando los ids generados. Todas las operaciones usan una conexión, SQL fijo y valores parametrizados. Se espera el COMMIT para responder; ante fallos se intenta ROLLBACK y se destruye la conexión si no puede revertirse.
+La línea y, si se informa, la población se comprueban dentro de la misma transacción con bloqueo compartido. Se insertan, en este orden, `crm_incidencia`, `crm_respuesta` y `crm_expediente`, enlazando los ids generados, y después dos avisos en `crm_notificaciones_correo`. Un fallo al registrar cualquiera de los avisos revierte también el alta. Todas las operaciones usan una conexión, SQL fijo y valores parametrizados. Se espera el COMMIT para responder; ante fallos se intenta ROLLBACK y se destruye la conexión si no puede revertirse.
 
 | HTTP | Significado |
 | --- | --- |
@@ -124,7 +124,7 @@ Solo se devuelven código y estado, sin datos personales ni los ids de respuesta
 
 El selector nativo del frontend produce `aaaa-mm-dd`; el formulario lo convierte a `dd-mm-aaaa` para este contrato existente, sin cambiar la validación ni el formato del backend.
 
-Este POST no crea un log de consulta de incidencias ni envía correo. La transacción impide altas parciales; perder la confirmación por red puede dejar una queja completa creada sin que el cliente lo sepa. No hay idempotencia entre reintentos. Se mantiene el alcance local autorizado; esta ampliación no añade autenticación general ni conexión a producción.
+Este POST no crea un log de consulta de incidencias. Registra los avisos de alta para el solicitante y el destinatario interno; no espera al proveedor de correo. La respuesta 201 confirma queja y avisos persistidos, no entrega de correos. Microsoft 365 y el consumidor independiente se configuran según [notificaciones-correo.md](notificaciones-correo.md). No se añade un endpoint de envío ni de cambio de estado: el CRM PHP sigue actualizando `crm_expediente.estado` y su trigger registra los avisos. La transacción impide altas parciales; perder la confirmación por red puede dejar una queja completa creada sin que el cliente lo sepa. No hay idempotencia entre reintentos. Se mantiene el alcance local autorizado; esta ampliación no añade autenticación general ni conexión a producción.
 
 ## GET /api/lineas
 
