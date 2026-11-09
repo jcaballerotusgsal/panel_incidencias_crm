@@ -1,5 +1,10 @@
 # Referencias oficiales
 
+Plantilla de correo, consultadas el 9 de noviembre de 2026:
+
+- [Microsoft Graph: cuerpo del mensaje en texto o HTML](https://learn.microsoft.com/en-us/graph/api/resources/itembody?view=graph-rest-1.0).
+- [Nodemailer: contenido html y alternativa text](https://nodemailer.com/message).
+
 Consultadas durante la preparación del proyecto el 14 de octubre de 2026. Las páginas «latest» pueden describir versiones mayores posteriores a las seleccionadas en esta plantilla.
 
 - Node.js, ciclo de versiones: https://nodejs.org/en/about/previous-releases

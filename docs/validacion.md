@@ -330,3 +330,25 @@ Se revisan capturas del inicio y de los formularios/ficha, guardadas solo en `.l
 Antes del commit y merge se repiten tipos, lint y smoke del frontend: correctos, con la advertencia previa de `postcss.config.mjs`. El smoke solo genera su log sintético habitual de consulta sin coincidencia; no crea quejas. El cambio conserva el backend, dependencias, configuración y contratos existentes.
 
 Se incorpora el PNG aportado por el usuario en `frontend/public/brand/logo-direxis-tusgsal.png`. Se verifica en Edge headless, sin interceptar la imagen: HTTP 200 con contenido PNG, carga en la cabecera, alternativa de texto oculta y ausencia de desbordamiento en escritorio de 1440 px y móvil de 375 px. Las capturas quedan en `.local/browser/`. No se envían formularios en esta comprobación ni se modifica el archivo del logo. Esto resuelve la comprobación pendiente del logo definitivo indicada en la revisión del 6 de noviembre; las imágenes de producción no se reconstruyen para este merge a desarrollo.
+
+## Plantilla HTML de correo al usuario — 9 de noviembre de 2026
+
+La rama `feat/plantilla-html-correo-usuario` parte de `develop` en `7a85f95`. Incorpora un único HTML editable en `backend/src/notificaciones/plantillas/usuario.html`, con bloques de alta, cambio de estado y enlace opcional, variables escapadas y diseño inicial corporativo. El solicitante usa HTML en Graph y HTML/texto en SMTP; el aviso interno conserva texto. Una plantilla ausente o inválida genera un fallo seguro reintentable antes de llamar al proveedor.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Tipos del backend | Correctos |
+| Compilación NestJS y pruebas del backend | 222 correctas, sin fallos; incluye plantilla real empaquetada, rutas de desarrollo/producción, edición sin caché, bloques opcionales, escape, URL y sintaxis inválida |
+| Graph simulado | HTML del solicitante en alta/cambio, estado escapado, texto interno, fallo de plantilla previo a la red y clasificación existente de errores correctos |
+| SMTP local de pruebas | Solicitante con multipart/alternative HTML/texto; destinatario interno solo texto; sin entrega externa |
+| Assets del CLI | Nest CLI 11.0.24 copia el HTML a `dist/notificaciones/plantillas/usuario.html`; una prueba usa esa copia real con NODE_ENV=production |
+| Lectura en desarrollo | NODE_ENV=development selecciona el original de src en cada envío, sin caché de contenido ni dependencia del watcher de Docker Desktop; las rutas y las relecturas se verifican en pruebas |
+| Vista HTML en Edge | Alta y cambio renderizados con datos sintéticos, un título visible por evento, estados y enlace correctos; escritorio de 800 px y móvil de 375 px sin desbordamiento |
+| Tipos y lint del frontend | Tipos correctos, lint sin errores; conserva la advertencia previa de postcss.config.mjs |
+| Smoke a través de Next.js | Correcto después del reinicio; solo genera el log sintético habitual de consulta 404, sin crear quejas |
+| Arranque local | Backend healthy y consumidor actualizado en ejecución con su configuración existente; el error transitorio de cola del primer ciclo no se repite en la revisión posterior |
+| Documentación | 241 enlaces relativos existentes y UTF-8 comprobados en 31 documentos |
+
+Se probó la copia mediante watcher, pero la actualización de fecha en el bind mount de Windows no propagó el cambio de forma fiable. La solución final lee directamente el original en desarrollo y utiliza los assets compilados en los demás modos; por eso editar HTML en Docker de desarrollo no requiere recompilar. Las vistas renderizadas y capturas se guardan solo en `.local/` con datos sintéticos.
+
+No se añaden dependencias, endpoints, cambios de esquema ni escrituras manuales en los datos del CRM. Se conserva el consumidor existente, que se detiene antes de reiniciar el backend por su instalación compartida y vuelve a arrancarse con el código actualizado. Las pruebas de correo emplean simulación de Graph y SMTP de loopback; no se realiza un envío manual de prueba a Microsoft 365. Quedan sin ejecutar la reconstrucción de imágenes de producción y la comprobación visual del mensaje recibido en clientes reales de correo.

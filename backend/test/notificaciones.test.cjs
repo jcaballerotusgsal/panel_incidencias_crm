@@ -2,6 +2,7 @@ require('reflect-metadata');
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const net = require('node:net');
+const fs = require('node:fs/promises');
 const { NotificacionesConfig } = require('../dist/notificaciones/notificaciones.config');
 const { NotificacionesRepository } = require('../dist/notificaciones/notificaciones.repository');
 const { NotificacionesWorker } = require('../dist/notificaciones/notificaciones.worker');
@@ -166,11 +167,43 @@ test('Graph envía por separado, reutiliza el token y limita el contenido del me
   assert.equal(calls[0].options.body.get('scope'), 'https://graph.microsoft.com/.default');
   assert.equal(calls[0].options.body.get('grant_type'), 'client_credentials');
   const message = JSON.parse(calls[1].options.body).message;
+  assert.equal(message.body.contentType, 'html');
   assert.deepEqual(message.toRecipients, [{ emailAddress: { address: aviso.destinatario } }]);
   assert.equal(message.ccRecipients, undefined);
   assert.match(message.body.content, /417/);
   assert.equal(message.body.content.includes('prueba@example.invalid'), false);
   assert.match(calls[1].url, /users\/remitente%40example.invalid\/sendMail$/);
+  assert.equal(JSON.parse(calls[2].options.body).message.body.contentType, 'Text');
+});
+
+/** Una plantilla rota no consume llamadas al proveedor; los avisos internos no dependen de ella. */
+test('Una plantilla inválida se reintenta y no impide enviar el aviso interno', async t => {
+  t.mock.method(fs, 'readFile', async () => '{{variableNoAdmitida}}');
+  const calls = [];
+  t.mock.method(globalThis, 'fetch', async url => {
+    calls.push(url);
+    return url.includes('login.microsoftonline.com') ? Response.json({ access_token: 'token-sintetico', expires_in: 3600 }) : new Response(null, { status: 202 });
+  });
+  const correo = new CorreoService(graphConfig());
+  await assert.rejects(correo.enviar(aviso), error => error.code === 'PLANTILLA_CORREO_INVALIDA' && error.permanent === false);
+  assert.equal(calls.length, 0);
+  await correo.enviar({ ...aviso, tipo_destinatario: 'interno', destinatario: 'interno@example.invalid' });
+  assert.equal(calls.length, 2);
+});
+
+/** Graph recibe el documento HTML con estados escapados y los datos capturados por el evento. */
+test('Graph envía HTML para un cambio de estado del solicitante', async t => {
+  let message;
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (url.includes('login.microsoftonline.com')) return Response.json({ access_token: 'token-sintetico', expires_in: 3600 });
+    message = JSON.parse(options.body).message;
+    return new Response(null, { status: 202 });
+  });
+  await new CorreoService(graphConfig()).enviar({ ...aviso, tipo_evento: 'estado_cambiado', estado_anterior: 'Pendiente', estado_nuevo: '<img src=x>' });
+  assert.equal(message.body.contentType, 'html');
+  assert.match(message.body.content, /Estado anterior/);
+  assert.match(message.body.content, /&lt;img src=x&gt;/);
+  assert.equal(message.body.content.includes('<img src=x>'), false);
 });
 
 /** El worker recibe solo códigos seguros y sabe distinguir límites temporales y permisos denegados. */
@@ -247,6 +280,10 @@ test('SMTP entrega dos mensajes independientes al servidor de prueba local', asy
     assert.equal(smtp.messages[0].recipients.length, 1);
     assert.match(smtp.messages[0].recipients[0], /prueba@example.invalid/);
     assert.match(smtp.messages[1].recipients[0], /interno@example.invalid/);
+    assert.match(smtp.messages[0].text, /Content-Type: multipart\/alternative/i);
+    assert.match(smtp.messages[0].text, /Content-Type: text\/html/i);
+    assert.match(smtp.messages[0].text, /Content-Type: text\/plain/i);
+    assert.equal(/Content-Type: text\/html/i.test(smtp.messages[1].text), false);
     const firstId = /Message-ID:\s*(<[^>]+>)/i.exec(smtp.messages[0].text);
     const secondId = /Message-ID:\s*(<[^>]+>)/i.exec(smtp.messages[1].text);
     assert.ok(firstId); assert.ok(secondId);

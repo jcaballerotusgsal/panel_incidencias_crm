@@ -20,7 +20,7 @@ En el alta, los avisos se insertan antes del COMMIT de la queja. En un cambio de
 
 El trigger **no hace HTTP** ni envía correo. Un proceso NestJS separado revisa la cola cada cinco segundos, reserva un aviso, libera la transacción y llama al proveedor. No necesita modificar el CRM PHP ni abrir un endpoint público de envío. Graph devuelve 202 cuando acepta el mensaje; esto no demuestra la entrega al buzón. [Referencia de sendMail](https://learn.microsoft.com/en-us/graph/api/user-sendmail?view=graph-rest-1.0).
 
-Los correos incluyen código de incidencia, confirmación de alta o estado anterior/actual, y un enlace general de consulta si se configura. No incluyen nombre, DNI, dirección ni texto de reclamación. Se realizan envíos individuales: el solicitante y el destinatario interno no aparecen juntos en Para/CC.
+Los correos incluyen código de incidencia, confirmación de alta o estado anterior/actual, y un enlace general de consulta si se configura. No incluyen nombre, DNI, dirección ni texto de reclamación. Se realizan envíos individuales: el solicitante y el destinatario interno no aparecen juntos en Para/CC. El usuario recibe el diseño de `backend/src/notificaciones/plantillas/usuario.html`, editable según [plantilla-correo-usuario.md](plantilla-correo-usuario.md); el aviso interno conserva texto plano. SMTP incluye también una alternativa de texto para el usuario.
 
 ## Configuración temporal y cambio de direcciones
 
@@ -99,7 +99,7 @@ Los eventos siguen registrándose. No se borran avisos ni se reescriben estados 
 
 ## Código y alternativa SMTP
 
-`notificaciones.repository.ts` administra la cola; `correo.service.ts` presenta el mensaje y usa Graph o Nodemailer; `notificaciones.worker.ts` procesa lotes sin solaparlos; `worker.ts` inicia el proceso sin puerto HTTP y cierra recursos tras el envío activo. La API solo importa el repositorio y no inicia otro consumidor.
+`notificaciones.repository.ts` administra la cola; `correo.service.ts` presenta el mensaje y usa Graph o Nodemailer; `plantilla-correo.ts` lee el HTML del solicitante en cada envío, sustituye sus variables con escape y valida bloques opcionales; `notificaciones.worker.ts` procesa lotes sin solaparlos; `worker.ts` inicia el proceso sin puerto HTTP y cierra recursos tras el envío activo. La API solo importa el repositorio y no inicia otro consumidor.
 
 SMTP requiere `MAIL_TRANSPORT=smtp`, `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_SECURE` (false para STARTTLS), `SMTP_REQUIRE_TLS` (true), `SMTP_USER` y `SMTP_PASSWORD`, según el servidor autorizado. No se presupone que Microsoft 365 permita contraseña SMTP. En las pruebas se utiliza exclusivamente un SMTP sintético sobre loopback, sin TLS dentro de esa prueba; la configuración real conserva TLS obligatorio. Véase [Nodemailer SMTP](https://nodemailer.com/smtp).
 

@@ -11,6 +11,7 @@
 | [formulario-queja.md](formulario-queja.md) | Formulario de queja, campos, envío y confirmación |
 | [identidad-corporativa.md](identidad-corporativa.md) | Colores DIREXIS TUSGSAL, ruta del logo y estilos compartidos |
 | [notificaciones-correo.md](notificaciones-correo.md) | Avisos de alta/estado, Microsoft 365, direcciones temporales y operación |
+| [plantilla-correo-usuario.md](plantilla-correo-usuario.md) | Archivo HTML editable, variables y diseño de los correos al usuario |
 | [base-de-datos/README.md](base-de-datos/README.md) | Procedencia del esquema local, campos y reglas de consulta |
 | [validacion.md](validacion.md) | Qué se pudo revisar y qué requiere ejecución real |
 | [referencias.md](referencias.md) | Documentación oficial consultada |

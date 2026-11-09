@@ -179,6 +179,14 @@ En desarrollo comparte compilados/dependencias en lectura; su entrypoint ejecuta
 
 El Compose compilado también ofrece el perfil, con la misma imagen de producción del backend y sin volumen de código. Las variables `DB_*` del consumidor están vacías por defecto: no añaden acceso a producción. Antes de utilizarlo, su base debe ser el mismo destino autorizado que usa la API y contar con los SQL revisados/aplicados manualmente. La API compilada conserva su configuración inicial sin DB; esta ampliación no configura un despliegue real.
 
+### Plantillas de correo
+
+`backend/nest-cli.json` distribuye `src/notificaciones/plantillas/**/*.html` a `dist` durante la compilación. En desarrollo, `correo-worker` utiliza `NODE_ENV=development` para leer el HTML original de `src` en cada envío, mediante su montaje existente en lectura. Así editar solo el HTML no requiere recompilar ni reiniciar el consumidor una vez instalada esta versión y no depende del watcher de archivos de Docker Desktop. No editar `dist` manualmente.
+
+Un cambio del código TypeScript del consumidor sí requiere compilar y reiniciar `correo-worker`. Si necesitas reiniciar backend, recuerda que su entrypoint ejecuta `npm ci`: detén antes el consumidor, que comparte sus dependencias, espera a que backend esté healthy y vuelve a arrancarlo. No se añaden volúmenes ni dependencias para las plantillas.
+
+En las imágenes compiladas, la copia ya forma parte del build de NestJS y del `COPY dist` existente del Dockerfile. Reconstruye/recrea backend y `correo-worker` para distribuir HTML nuevo en ese modo. Los archivos, las variables y el formato están en [plantilla-correo-usuario.md](plantilla-correo-usuario.md).
+
 ## Antes de publicar
 
 Añade un proxy inverso con HTTPS y los controles de acceso de la aplicación. Los nombres «production» de los targets indican compilación optimizada, no una garantía de seguridad ni de disponibilidad empresarial.
