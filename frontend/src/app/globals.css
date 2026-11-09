@@ -3,11 +3,81 @@
 :root {
   color-scheme: light;
   font-family: Arial, Helvetica, sans-serif;
+  --brand-yellow: #f5a810;
+  --brand-yellow-hover: #e69a08;
+  --brand-gray: #64666b;
+  --brand-ink: #292b30;
+  --brand-soft: #fff7e6;
+  --brand-canvas: #f6f6f4;
+  --brand-line: #dededb;
 }
 
-body { margin: 0; }
+@theme inline {
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-yellow-hover: var(--brand-yellow-hover);
+  --color-brand-gray: var(--brand-gray);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-canvas: var(--brand-canvas);
+  --color-line: var(--brand-line);
+}
+
+body {
+  margin: 0;
+  background: var(--brand-canvas);
+  color: var(--brand-ink);
+}
+
+::selection { background: var(--brand-yellow); color: var(--brand-ink); }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible {
-  outline: 3px solid #0284c7;
+  outline: 3px solid var(--brand-gray);
   outline-offset: 4px;
+}
+
+@layer components {
+  .page-shell {
+    @apply flex min-h-screen flex-col bg-canvas text-brand-ink;
+  }
+
+  .surface-card {
+    @apply rounded-2xl border border-line bg-white shadow-[0_8px_32px_-20px_rgba(41,43,48,0.25)];
+  }
+
+  .form-input {
+    @apply mt-2 w-full rounded-xl border border-brand-gray/75 bg-white px-4 py-3 text-sm text-brand-ink transition-colors placeholder:text-brand-gray disabled:cursor-not-allowed disabled:bg-canvas disabled:text-brand-gray;
+    min-height: 3rem;
+  }
+
+  .form-input:focus {
+    border-color: var(--brand-gray);
+    outline: 2px solid var(--brand-gray);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 5px var(--brand-soft);
+  }
+
+  .button-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-yellow px-6 py-3 text-sm font-bold text-brand-ink transition-colors hover:bg-brand-yellow-hover disabled:cursor-not-allowed disabled:opacity-50;
+    min-height: 3rem;
+  }
+
+  .button-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-brand-ink transition-colors hover:border-brand-gray hover:bg-brand-soft;
+  }
+
+  .brand-link {
+    @apply font-semibold text-brand-ink underline decoration-brand-yellow decoration-2 underline-offset-4 transition-colors hover:text-brand-gray;
+  }
+
+  .section-eyebrow {
+    @apply flex items-center gap-3 text-xs font-bold tracking-[0.14em] text-brand-gray uppercase;
+  }
+
+  .section-eyebrow::before {
+    content: '';
+    width: 1.75rem;
+    height: 0.25rem;
+    border-radius: 999px;
+    background: var(--brand-yellow);
+  }
 }

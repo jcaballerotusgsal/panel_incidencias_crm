@@ -98,13 +98,13 @@ export function ResultadoIncidencia() {
   return (
     <section aria-labelledby="resultado-titulo" className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 id="resultado-titulo" className="text-2xl font-semibold tracking-tight text-slate-900">
+        <h1 id="resultado-titulo" className="text-2xl font-semibold tracking-tight text-brand-ink">
           Resultado de la consulta
         </h1>
         <Link
           href="/"
           onClick={nuevaConsulta}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800"
+          className="button-secondary"
         >
           <span aria-hidden="true">←</span>
           Volver al formulario
@@ -112,8 +112,8 @@ export function ResultadoIncidencia() {
       </div>
       {resultado?.estado === 'encontrada' && (
         <>
-          <div className="rounded-2xl bg-linear-to-br from-slate-900 to-sky-900 p-6 text-white shadow-sm sm:p-8">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-sky-100">
+          <div className="rounded-2xl border-t-4 border-brand-yellow bg-brand-ink p-6 text-white shadow-sm sm:p-8">
+            <span className="inline-flex items-center gap-2 rounded-full bg-brand-yellow px-3 py-1 text-xs font-semibold text-brand-ink">
               <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="size-4">
                 <path d="m5 10 3 3 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -122,28 +122,28 @@ export function ResultadoIncidencia() {
             <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
               Incidencia #{resultado.incidencia.id}
             </h2>
-            <p className="mt-3 text-sm leading-6 text-sky-100">Información de la incidencia consultada.</p>
+            <p className="mt-3 text-sm leading-6 text-white/85">Información de la incidencia consultada.</p>
           </div>
 
-          <section aria-labelledby="detalle-titulo" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <h3 id="detalle-titulo" className="text-lg font-semibold text-slate-900">Detalle de la incidencia</h3>
-            <p className="mt-4 whitespace-pre-wrap break-words rounded-xl border border-sky-100 bg-sky-50/60 p-5 text-sm leading-7 text-slate-700">
+          <section aria-labelledby="detalle-titulo" className="rounded-2xl border border-line bg-white p-6 shadow-sm sm:p-8">
+            <h3 id="detalle-titulo" className="text-lg font-semibold text-brand-ink">Detalle de la incidencia</h3>
+            <p className="mt-4 whitespace-pre-wrap break-words rounded-xl border border-brand-yellow/30 bg-brand-soft p-5 text-sm leading-7 text-brand-ink">
               {mostrarValor(resultado.incidencia.m_detalle)}
             </p>
           </section>
 
           <div className="grid gap-6 md:grid-cols-2">
             {grupos.map((grupo) => (
-              <section key={grupo.titulo} aria-label={grupo.titulo} className="min-w-0 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="flex items-center gap-3 text-base font-semibold text-slate-900">
-                  <span aria-hidden="true" className="h-5 w-1 rounded-full bg-sky-600" />
+              <section key={grupo.titulo} aria-label={grupo.titulo} className="min-w-0 rounded-2xl border border-line bg-white p-6 shadow-sm">
+                <h3 className="flex items-center gap-3 text-base font-semibold text-brand-ink">
+                  <span aria-hidden="true" className="h-5 w-1 rounded-full bg-brand-yellow" />
                   {grupo.titulo}
                 </h3>
                 <dl className="mt-5 grid gap-x-6 gap-y-5 sm:grid-cols-2">
                   {grupo.campos.map((campo) => (
                     <div key={campo.campo} className={campo.anchoCompleto ? 'min-w-0 sm:col-span-2' : 'min-w-0'}>
-                      <dt className="text-xs font-medium text-slate-500">{campo.etiqueta}</dt>
-                      <dd className="mt-1.5 whitespace-pre-wrap break-words text-sm font-medium leading-6 text-slate-800">
+                      <dt className="text-xs font-medium text-brand-gray">{campo.etiqueta}</dt>
+                      <dd className="mt-1.5 whitespace-pre-wrap break-words text-sm font-medium leading-6 text-brand-ink">
                         {mostrarValor(resultado.incidencia[campo.campo], campo.fecha)}
                       </dd>
                     </div>
@@ -155,13 +155,13 @@ export function ResultadoIncidencia() {
         </>
       )}
       {resultado?.estado === 'no-encontrada' && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <p role="status" className="text-slate-600">No se han encontrado los datos.</p>
+        <div className="rounded-2xl border border-line bg-white p-8 text-center shadow-sm">
+          <p role="status" className="text-brand-gray">No se han encontrado los datos.</p>
         </div>
       )}
       {resultado === null && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <p className="text-slate-600">Realiza una consulta desde el formulario para ver el resultado.</p>
+        <div className="rounded-2xl border border-line bg-white p-8 text-center shadow-sm">
+          <p className="text-brand-gray">Realiza una consulta desde el formulario para ver el resultado.</p>
         </div>
       )}
     </section>

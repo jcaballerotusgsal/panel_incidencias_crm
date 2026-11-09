@@ -307,3 +307,26 @@ No se han enviado correos externos ni se han registrado credenciales/permisos en
 ## Preparación de la integración en develop — 6 de noviembre de 2026
 
 Antes de guardar e integrar las notificaciones se repiten tipos de backend/frontend, compilación y las 197 pruebas del backend, lint y smoke a través de Next.js: todo correcto, con la advertencia previa de postcss.config.mjs. Las pruebas no envían correos externos ni crean quejas reales. Se mantiene .env fuera de Git; la comprobación del envío real con Microsoft 365 queda fuera de esta integración.
+
+## Identidad visual DIREXIS TUSGSAL — 6 de noviembre de 2026
+
+La rama `feat/estilos-corporativos-direxis-tusgsal` parte de `develop` en `5f66dea`. Añade la paleta solicitada (`#f5a810` y `#64666b`), clases compartidas de Tailwind 4, cabecera/pie corporativos, navegación activa y logo intercambiable desde `frontend/public/brand/logo-direxis-tusgsal.png`. Adapta consulta, queja, confirmación, resultado y la pantalla de demostración; no cambia contratos de API ni operaciones de datos. Las instrucciones del logo están en [identidad-corporativa.md](identidad-corporativa.md).
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Tipos del frontend | Correctos |
+| Lint del frontend | Sin errores; conserva la advertencia previa de `postcss.config.mjs` |
+| Smoke a través de Next.js | Correcto: rutas, formularios, calendario y catálogos; solo crea el log sintético habitual del 404 |
+| Edge headless: paleta y foco | Botón con RGB exacto del amarillo, texto gris corporativo y foco visible; contraste de los textos principales comprobado, sin constituir una auditoría completa de accesibilidad |
+| Edge: adaptación | Inicio a 320/375 px, ficha y queja a 375 px sin desbordamiento horizontal; capturas de escritorio a 1440 px |
+| Edge: logo | Ruta fija comprobada, texto provisional con 404 simulado y carga correcta de un PNG de prueba; sin modificar ni instalar un logo oficial |
+| Edge: formularios con API simulada | Consulta encontrada/no encontrada, campos ocultos, navegación activa, 16 campos y seis obligatorios de la queja, fecha y población enviadas y confirmación correctos; sin escrituras en el CRM |
+| Documentación | 234 enlaces relativos existentes y UTF-8 comprobados en 30 documentos |
+
+Se revisan capturas del inicio y de los formularios/ficha, guardadas solo en `.local/browser/` con datos sintéticos. No se añaden dependencias, servicios, cambios de base de datos ni código de backend. Las pruebas de backend, las imágenes de producción y el envío real de correo no se repiten para esta modificación de presentación. Queda pendiente comprobar el aspecto con el logo definitivo aportado por el usuario; en modo compilado debe incluirse en el siguiente build del frontend.
+
+## Integración de la identidad corporativa en develop — 9 de noviembre de 2026
+
+Antes del commit y merge se repiten tipos, lint y smoke del frontend: correctos, con la advertencia previa de `postcss.config.mjs`. El smoke solo genera su log sintético habitual de consulta sin coincidencia; no crea quejas. El cambio conserva el backend, dependencias, configuración y contratos existentes.
+
+Se incorpora el PNG aportado por el usuario en `frontend/public/brand/logo-direxis-tusgsal.png`. Se verifica en Edge headless, sin interceptar la imagen: HTTP 200 con contenido PNG, carga en la cabecera, alternativa de texto oculta y ausencia de desbordamiento en escritorio de 1440 px y móvil de 375 px. Las capturas quedan en `.local/browser/`. No se envían formularios en esta comprobación ni se modifica el archivo del logo. Esto resuelve la comprobación pendiente del logo definitivo indicada en la revisión del 6 de noviembre; las imágenes de producción no se reconstruyen para este merge a desarrollo.

@@ -9,6 +9,7 @@
 | [ramas.md](ramas.md) | Flujo de trabajo con main, develop y ramas de cada tarea |
 | [api.md](api.md) | Endpoints de salud, consulta, alta de quejas y catálogo de líneas |
 | [formulario-queja.md](formulario-queja.md) | Formulario de queja, campos, envío y confirmación |
+| [identidad-corporativa.md](identidad-corporativa.md) | Colores DIREXIS TUSGSAL, ruta del logo y estilos compartidos |
 | [notificaciones-correo.md](notificaciones-correo.md) | Avisos de alta/estado, Microsoft 365, direcciones temporales y operación |
 | [base-de-datos/README.md](base-de-datos/README.md) | Procedencia del esquema local, campos y reglas de consulta |
 | [validacion.md](validacion.md) | Qué se pudo revisar y qué requiere ejecución real |

@@ -79,4 +79,6 @@ Las clases de Tailwind, como `p-6`, `rounded-2xl` o `sm:grid-cols-2`, describen 
 
 El alias `@/` equivale a `frontend/src/`, según [tsconfig.json](../../frontend/tsconfig.json). La cabecera y el pie compartidos están en [plant.tsx](../../frontend/src/components/plant.tsx). [ApiStatus](../../frontend/src/components/api-status.tsx) es un componente de ejemplo que comprueba `/api/health` mediante `useEffect`; se conserva en el repositorio, pero la página inicial actual no lo incluye.
 
+Desde la adaptación corporativa, `globals.css` también declara la paleta mediante variables CSS y `@theme inline`: `bg-brand-yellow` utiliza `#f5a810` y `text-brand-gray`, `#64666b`. Las clases compartidas como `form-input` y `button-primary` agrupan estilos repetidos. El componente cliente [marca-corporativa.tsx](../../frontend/src/components/marca-corporativa.tsx) utiliza eventos de carga para alternar entre el logo y el nombre provisional, y `usePathname` para señalar la sección activa. El PNG se coloca en `frontend/public/brand/logo-direxis-tusgsal.png`; los pasos están en [identidad corporativa](../identidad-corporativa.md).
+
 [← Visión general](01-vision-general.md) · [Siguiente: backend →](03-backend.md)

@@ -57,6 +57,8 @@ La pantalla inicial envía código e identificador a `POST /api/incidencias/cons
 
 El servicio MySQL debe contener una copia local autorizada del CRM; no se importa ni modifica automáticamente. La configuración y procedencia se describen en [docs/base-de-datos/README.md](docs/base-de-datos/README.md). `/api/health` comprueba únicamente el proceso NestJS y declara `database: "not-checked"`.
 
+Para añadir el logo corporativo, coloca un PNG en `frontend/public/brand/logo-direxis-tusgsal.png` y recarga. Los colores DIREXIS TUSGSAL y las instrucciones completas están en [identidad corporativa](docs/identidad-corporativa.md).
+
 ## 3. Código que debes editar
 
 ```text
