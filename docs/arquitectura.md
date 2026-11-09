@@ -65,6 +65,8 @@ La ampliación de logs añade una tabla creada manualmente en esa copia local. L
 
 El servicio opcional `correo-worker`, perfil Compose `notificaciones`, inicia un contexto NestJS sin HTTP, reserva avisos mediante MySQL y los envía a Microsoft Graph fuera de la transacción. La API y el frontend no reciben credenciales de Microsoft ni ejecutan consumidores. Hay reintentos por destinatario, reservas recuperables y protección por token; aceptar un envío no equivale a entrega en el buzón. El envío está desactivado hasta configurar la aplicación de Microsoft 365. Véanse [operación y configuración](notificaciones-correo.md) y [tabla y trigger](base-de-datos/notificaciones-correo.md).
 
+La plantilla de correo al usuario está en `backend/src/notificaciones/plantillas/usuario.html`. En desarrollo el consumidor lee ese original por envío; en los demás modos lee la copia que Nest CLI distribuye a `dist/notificaciones/plantillas/`. Sus bloques distinguen alta y cambio de estado. Las variables se escapan sin evaluar código, y una plantilla inválida genera un fallo reintentable antes de llamar al proveedor. Graph usa HTML para el solicitante, SMTP añade una alternativa de texto y el destinatario interno conserva texto plano. Los pasos de edición están en [plantilla-correo-usuario.md](plantilla-correo-usuario.md).
+
 ## Producción
 
 El modo compilado genera imágenes sin bind mounts del código y las ejecuta como usuario `node`. El frontend usa la salida standalone de Next.js. El backend no publica un puerto en el host en ese modo.

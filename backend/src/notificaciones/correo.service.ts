@@ -3,6 +3,7 @@ import { createTransport, type Transporter } from 'nodemailer';
 import { isEmail } from 'class-validator';
 import type { Notificacion } from './notificacion';
 import { NotificacionesConfig } from './notificaciones.config';
+import { crearHtmlCorreoUsuario, ErrorPlantillaCorreo } from './plantilla-correo';
 
 /** Error de envío con código público; no conserva respuestas externas ni destinatarios. */
 export class ErrorEnvio extends Error {
@@ -33,10 +34,10 @@ export class CorreoService {
   }
 
   /**
-   * Entrega un aviso al proveedor, sin incluir datos personales de la reclamación en el mensaje.
+   * Entrega un aviso al proveedor; el solicitante usa la plantilla HTML y el interno conserva texto.
    * @param aviso Fila reservada; el correo interno ya está resuelto y persistido.
    * @returns Promesa cuando el proveedor acepta el envío; no confirma llegada al buzón.
-   * @throws ErrorEnvio con código seguro, temporal o permanente.
+   * @throws ErrorEnvio con código seguro; una plantilla inválida se puede corregir antes del reintento.
    */
   async enviar(aviso: Notificacion): Promise<void> {
     if (!this.config.enabled) throw new ErrorEnvio('ENVIO_DESACTIVADO');
@@ -54,15 +55,18 @@ export class CorreoService {
       ...(this.config.consultationUrl ? [`Puedes consultar la incidencia en ${this.config.consultationUrl}`] : []),
     ].join('\n\n');
     try {
+      const html = aviso.tipo_destinatario === 'solicitante'
+        ? await crearHtmlCorreoUsuario(aviso, this.config.consultationUrl) : undefined;
       if (this.config.transport === 'microsoft365') {
-        await this.enviarGraph(aviso.destinatario, subject, text, aviso.evento_id, aviso.tipo_destinatario);
+        await this.enviarGraph(aviso.destinatario, subject, text, aviso.evento_id, aviso.tipo_destinatario, html);
       } else {
         if (!this.smtp) throw new ErrorEnvio('SMTP_NO_CONFIGURADO', true);
-        await this.smtp.sendMail({ from: this.config.from, to: aviso.destinatario, subject, text,
+        await this.smtp.sendMail({ from: this.config.from, to: aviso.destinatario, subject, text, ...(html ? { html } : {}),
           messageId: `<${aviso.evento_id}.${aviso.tipo_destinatario}@${this.config.from.split('@')[1]}>`,
           disableFileAccess: true, disableUrlAccess: true });
       }
     } catch (error: unknown) {
+      if (error instanceof ErrorPlantillaCorreo) throw new ErrorEnvio('PLANTILLA_CORREO_INVALIDA');
       if (error instanceof ErrorEnvio) throw error;
       const code = typeof error === 'object' && error !== null && 'responseCode' in error ? error.responseCode : null;
       throw new ErrorEnvio('PROVEEDOR_CORREO', typeof code === 'number' && code >= 500);
@@ -93,18 +97,19 @@ export class CorreoService {
   }
 
   /**
-   * Presenta un mensaje de texto a Graph con un único destinatario.
+   * Presenta HTML al solicitante o texto al destinatario interno mediante Graph.
    * @param to Correo validado. @param subject Asunto. @param text Cuerpo sin datos de reclamación.
    * @param eventId UUID estable. @param tipo Tipo de destinatario para trazabilidad.
+   * @param html Plantilla ya renderizada; si se omite, el cuerpo utiliza texto plano.
    * @returns Promesa al recibir 202, que confirma aceptación, no entrega.
    * @throws ErrorEnvio clasificado por estado HTTP; invalida el token ante 401.
    */
-  private async enviarGraph(to: string, subject: string, text: string, eventId: string, tipo: string): Promise<void> {
+  private async enviarGraph(to: string, subject: string, text: string, eventId: string, tipo: string, html?: string): Promise<void> {
     const token = await this.token();
     const response = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(this.config.from)}/sendMail`, {
       method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000),
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: { subject, body: { contentType: 'Text', content: text },
+      body: JSON.stringify({ message: { subject, body: { contentType: html === undefined ? 'Text' : 'html', content: html ?? text },
         toRecipients: [{ emailAddress: { address: to } }],
         internetMessageHeaders: [{ name: 'x-crm-notificacion', value: `${eventId}.${tipo}` }] }, saveToSentItems: true }),
     });
