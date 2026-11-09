@@ -4,8 +4,8 @@ import { ConsultaIncidenciaProvider } from '@/components/consulta-incidencia-con
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Backoffice | Entorno de desarrollo',
-  description: 'Base con NestJS, Express, Next.js, React y Tailwind CSS.',
+  title: { default: 'Atención al usuario | DIREXIS TUSGSAL', template: '%s | DIREXIS TUSGSAL' },
+  description: 'Consulta de incidencias y presentación de quejas de DIREXIS TUSGSAL.',
 };
 
 /**

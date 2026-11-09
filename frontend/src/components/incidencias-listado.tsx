@@ -26,7 +26,7 @@ export function IncidenciasListado({ incidencias }: Props) {
         <section className="mt-6">
             <label
                 htmlFor="buscar-incidencias"
-                className="block text-sm font-medium text-slate-700"
+                className="block text-sm font-medium text-brand-ink"
             >
                 Buscar por título
             </label>
@@ -37,10 +37,10 @@ export function IncidenciasListado({ incidencias }: Props) {
                 value={busqueda}
                 onChange={(event) => setBusqueda(event.target.value)}
                 placeholder="Por ejemplo: impresora"
-                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-sky-700"
+                className="mt-2 w-full rounded-lg border border-line bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-brand-gray"
             />
 
-            <p aria-live="polite" className="mt-3 text-sm text-slate-600">
+            <p aria-live="polite" className="mt-3 text-sm text-brand-gray">
                 Resultados: {visibles.length}
             </p>
 
@@ -48,13 +48,13 @@ export function IncidenciasListado({ incidencias }: Props) {
                 {visibles.map((incidencia) => (
                     <li
                         key={incidencia.id}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4"
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-white p-4"
                     >
                         <span className="font-medium">
                             #{incidencia.id} — {incidencia.titulo}
                         </span>
 
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-sm">
+                        <span className="rounded-full bg-canvas px-3 py-1 text-sm">
                             {incidencia.estado}
                         </span>
                     </li>
@@ -62,7 +62,7 @@ export function IncidenciasListado({ incidencias }: Props) {
             </ul>
 
             {visibles.length === 0 && (
-                <p className="mt-4 text-slate-600">
+                <p className="mt-4 text-brand-gray">
                     No hay incidencias que coincidan con la búsqueda.
                 </p>
             )}

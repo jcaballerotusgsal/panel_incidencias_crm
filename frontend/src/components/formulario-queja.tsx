@@ -27,7 +27,7 @@ type CatalogoPoblaciones =
   | { estado: 'disponible'; poblaciones: Poblacion[] }
   | { estado: 'error' };
 
-const estiloCampo = 'mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-2 focus:outline-sky-600 disabled:bg-slate-100 disabled:text-slate-500';
+const estiloCampo = 'form-input';
 
 const camposPersonales: readonly Campo[] = [
   { nombre: 'nombre', etiqueta: 'Nombre', autoComplete: 'given-name', obligatorio: true, maxLength: 45 },
@@ -48,7 +48,7 @@ function CampoFormulario({ campo }: { campo: Campo }) {
   const id = `queja-${campo.nombre}`;
   return (
     <div className={campo.anchoCompleto ? 'min-w-0 sm:col-span-2' : 'min-w-0'}>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+      <label htmlFor={id} className="block text-sm font-medium text-brand-ink">
         {campo.etiqueta}{campo.obligatorio && <span aria-hidden="true" className="text-rose-600"> *</span>}
       </label>
       <input
@@ -214,11 +214,11 @@ export function FormularioQueja() {
     return (
       <section role="status" className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm sm:p-8">
         <h2 className="text-xl font-semibold text-emerald-800">Tu queja se ha registrado</h2>
-        <p className="mt-4 text-slate-700">Código de incidencia: <strong className="break-all">{creada.codigoIncidencia}</strong></p>
-        <p className="mt-2 text-sm text-slate-600">Estado: {creada.estado}. Conserva el código para consultar tu incidencia.</p>
+        <p className="mt-4 text-brand-ink">Código de incidencia: <strong className="break-all">{creada.codigoIncidencia}</strong></p>
+        <p className="mt-2 text-sm text-brand-gray">Estado: {creada.estado}. Conserva el código para consultar tu incidencia.</p>
         <div className="mt-6 flex flex-wrap gap-4 text-sm font-medium">
-          <Link href="/" className="text-sky-700 underline underline-offset-4">Consultar una incidencia</Link>
-          <button type="button" onClick={nuevaQueja} className="text-sky-700 underline underline-offset-4">Crear otra queja</button>
+          <Link href="/" className="brand-link">Consultar una incidencia</Link>
+          <button type="button" onClick={nuevaQueja} className="brand-link">Crear otra queja</button>
         </div>
       </section>
     );
@@ -235,35 +235,35 @@ export function FormularioQueja() {
 
   return (
     <form method="post" onSubmit={enviarQueja} aria-busy={enviando} className="space-y-8">
-      <p className="text-sm text-slate-600">Los campos marcados con un asterisco (*) son obligatorios.</p>
+      <p className="text-sm text-brand-gray">Los campos marcados con un asterisco (*) son obligatorios.</p>
 
-      <fieldset disabled={enviando} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <legend className="px-2 text-base font-semibold text-slate-900">Datos personales</legend>
+      <fieldset disabled={enviando} className="surface-card p-6 sm:p-8">
+        <legend className="rounded-lg bg-brand-soft px-3 py-1 text-sm font-bold text-brand-ink">Datos personales</legend>
         <div className="grid gap-6 sm:grid-cols-2">
           {camposPersonales.map((campo) => <CampoFormulario key={campo.nombre} campo={campo} />)}
         </div>
       </fieldset>
 
-      <fieldset disabled={enviando} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <legend className="px-2 text-base font-semibold text-slate-900">Datos del suceso</legend>
+      <fieldset disabled={enviando} className="surface-card p-6 sm:p-8">
+        <legend className="rounded-lg bg-brand-soft px-3 py-1 text-sm font-bold text-brand-ink">Datos del suceso</legend>
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="min-w-0">
-            <label htmlFor="queja-fecha" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="queja-fecha" className="block text-sm font-medium text-brand-ink">
               Fecha<span aria-hidden="true" className="text-rose-600"> *</span>
             </label>
             <input id="queja-fecha" name="fecha" type="date" required min="1000-01-01" max="9999-12-31" aria-describedby="queja-fecha-formato" className={estiloCampo} />
-            <p id="queja-fecha-formato" className="mt-2 text-xs text-slate-500">Selecciona la fecha del suceso en el calendario.</p>
+            <p id="queja-fecha-formato" className="mt-2 text-xs text-brand-gray">Selecciona la fecha del suceso en el calendario.</p>
           </div>
           <CampoFormulario campo={{ nombre: 'hora', etiqueta: 'Hora', tipo: 'time', obligatorio: true }} />
           <div className="min-w-0">
-            <label htmlFor="queja-linea" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="queja-linea" className="block text-sm font-medium text-brand-ink">
               Línea<span aria-hidden="true" className="text-rose-600"> *</span>
             </label>
             <select id="queja-linea" name="linea" required defaultValue="" disabled={catalogo.estado !== 'disponible' || lineas.length === 0} aria-busy={catalogo.estado === 'cargando'} aria-describedby="queja-linea-ayuda" className={estiloCampo}>
               <option value="" disabled>{textoOpcion}</option>
               {lineas.map((linea) => <option key={linea.id_linea_amb} value={linea.id_linea_amb}>{linea.nom_linea_tusgsal.trim()}</option>)}
             </select>
-            <p id="queja-linea-ayuda" role="status" className={catalogo.estado === 'error' ? 'mt-2 text-xs text-rose-700' : 'mt-2 text-xs text-slate-500'}>
+            <p id="queja-linea-ayuda" role="status" className={catalogo.estado === 'error' ? 'mt-2 text-xs text-rose-700' : 'mt-2 text-xs text-brand-gray'}>
               {catalogo.estado === 'error' ? 'No se han podido cargar las líneas. Inténtalo de nuevo más tarde.'
                 : catalogo.estado === 'cargando' ? 'Cargando el catálogo de líneas.'
                   : lineas.length === 0 ? 'No hay líneas disponibles para seleccionar.' : 'Selecciona la línea en la que ocurrió el suceso.'}
@@ -271,12 +271,12 @@ export function FormularioQueja() {
           </div>
           <CampoFormulario campo={{ nombre: 'numeroVehiculo', etiqueta: 'Núm. vehículo', placeholder: 'Número del autobús', maxLength: 45 }} />
           <div className="min-w-0">
-            <label htmlFor="queja-zona" className="block text-sm font-medium text-slate-700">Población</label>
+            <label htmlFor="queja-zona" className="block text-sm font-medium text-brand-ink">Población</label>
             <select id="queja-zona" name="zona" defaultValue="" disabled={catalogoPoblaciones.estado !== 'disponible' || poblaciones.length === 0} aria-busy={catalogoPoblaciones.estado === 'cargando'} aria-describedby="queja-zona-ayuda" className={estiloCampo}>
               <option value="">{textoPoblacion}</option>
               {poblaciones.map((poblacion) => <option key={poblacion.id_m_zona} value={poblacion.id_m_zona}>{poblacion.poblacion.trim()}</option>)}
             </select>
-            <p id="queja-zona-ayuda" role="status" className={catalogoPoblaciones.estado === 'error' ? 'mt-2 text-xs text-rose-700' : 'mt-2 text-xs text-slate-500'}>
+            <p id="queja-zona-ayuda" role="status" className={catalogoPoblaciones.estado === 'error' ? 'mt-2 text-xs text-rose-700' : 'mt-2 text-xs text-brand-gray'}>
               {catalogoPoblaciones.estado === 'cargando' ? 'Cargando el catálogo de poblaciones.'
                 : catalogoPoblaciones.estado === 'error' ? 'No se han podido cargar las poblaciones. Puedes enviar la queja sin especificarla.'
                   : poblaciones.length === 0 ? 'No hay poblaciones disponibles. Puedes enviar la queja sin especificarla.' : 'Opcional. Selecciona la población donde ocurrió el suceso.'}
@@ -288,15 +288,15 @@ export function FormularioQueja() {
         </div>
       </fieldset>
 
-      <fieldset disabled={enviando} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <legend className="px-2 text-base font-semibold text-slate-900">Tu reclamación</legend>
-        <label htmlFor="queja-motivo" className="block text-sm font-medium text-slate-700">Motivo de reclamación</label>
+      <fieldset disabled={enviando} className="surface-card p-6 sm:p-8">
+        <legend className="rounded-lg bg-brand-soft px-3 py-1 text-sm font-bold text-brand-ink">Tu reclamación</legend>
+        <label htmlFor="queja-motivo" className="block text-sm font-medium text-brand-ink">Motivo de reclamación</label>
         <textarea id="queja-motivo" name="motivo" rows={6} maxLength={20000} placeholder="Describe qué ha ocurrido." className={estiloCampo} />
       </fieldset>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-500">Recibirás un código al completar el registro.</p>
-        <button type="submit" disabled={enviando || catalogo.estado !== 'disponible' || lineas.length === 0} className="rounded-lg bg-sky-700 px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{enviando ? 'Enviando…' : 'Enviar queja'}</button>
+        <p className="text-sm text-brand-gray">Recibirás un código al completar el registro.</p>
+        <button type="submit" disabled={enviando || catalogo.estado !== 'disponible' || lineas.length === 0} className="button-primary">{enviando ? 'Enviando…' : 'Enviar queja'}</button>
       </div>
       <div aria-live="polite">{error && <p role="alert" className="text-sm text-rose-700">{error}</p>}</div>
     </form>
