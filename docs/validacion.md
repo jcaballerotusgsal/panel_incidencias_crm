@@ -352,3 +352,24 @@ La rama `feat/plantilla-html-correo-usuario` parte de `develop` en `7a85f95`. In
 Se probó la copia mediante watcher, pero la actualización de fecha en el bind mount de Windows no propagó el cambio de forma fiable. La solución final lee directamente el original en desarrollo y utiliza los assets compilados en los demás modos; por eso editar HTML en Docker de desarrollo no requiere recompilar. Las vistas renderizadas y capturas se guardan solo en `.local/` con datos sintéticos.
 
 No se añaden dependencias, endpoints, cambios de esquema ni escrituras manuales en los datos del CRM. Se conserva el consumidor existente, que se detiene antes de reiniciar el backend por su instalación compartida y vuelve a arrancarse con el código actualizado. Las pruebas de correo emplean simulación de Graph y SMTP de loopback; no se realiza un envío manual de prueba a Microsoft 365. Quedan sin ejecutar la reconstrucción de imágenes de producción y la comprobación visual del mensaje recibido en clientes reales de correo.
+
+## Preparación de la entrega v1.0.0 — 12 de noviembre de 2026
+
+Se integra `cambios-para-pre` en `develop`, incorporando el commit `4261ad5`: backend y consumidor comparten host y puerto MySQL configurables. La validación previa a promover `develop` a `main` detecta cinco vulnerabilidades de ejecución en el backend (tres altas y dos moderadas). La rama `fix/dependencias-entrega-v1` corrige el manifiesto y el lockfile conservando NestJS 11 y Node.js 24: `@nestjs/platform-express` pasa de 11.2.7 a 11.2.9 y `@nestjs/swagger`, de 11.4.7 a 11.4.8; se actualizan las dependencias transitivas relacionadas. No se aplica `--force` ni se cambian las instalaciones de los servicios en ejecución.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Tipos de backend y frontend | Correctos; la compilación final de NestJS comprueba también los tipos con las dependencias corregidas |
+| Lint del frontend | Sin errores; conserva la advertencia previa de `postcss.config.mjs` |
+| Imágenes compiladas | Frontend y backend construidos con sus Dockerfiles de producción y `npm ci`; backend reconstruido tras la corrección de dependencias |
+| Pruebas del backend final | 222 correctas sobre la imagen de producción, con tests montados en lectura y red externa deshabilitada; Graph simulado, SMTP local y repositorios sintéticos |
+| Auditoría de ejecución | Backend final: cero vulnerabilidades indicadas por npm al podar dependencias de desarrollo; frontend: cero con `npm audit --omit=dev` |
+| Arranque compilado | Frontend y backend healthy en el proyecto separado `backoffice-release-v1-validation`, sin credenciales ni conexión a MySQL y sin consumidor de correo |
+| Smoke compilado | Correctos `/health`, `/api/health`, `/api`, consulta inicial, resultado, formulario de 16 campos y calendario, CSS/JavaScript compilados y PNG corporativo |
+| Validación y configuración pública | Cuerpos inválidos responden 400; Swagger responde 404; catálogos y consulta sin base responden 503 controlado |
+
+La prueba de humo compilada se conserva solo en `.local/release-v1-smoke.cjs`. Se usa `.env.example`, otro proyecto Compose y el puerto 3100; no se mezclan los Compose de desarrollo y producción. Se retiran al terminar únicamente los contenedores y la red de esta comprobación. No se detienen los servicios existentes ni se utilizan sus credenciales. No se ejecutan migraciones, DDL, altas, consultas al CRM externo ni envíos reales durante esta preparación.
+
+No se repite el smoke completo que genera un log 404 contra el CRM configurado: esa prueba requiere una base de integración autorizada; los flujos de datos se cubren aquí con los dobles de las 222 pruebas. Las instalaciones completas de build todavía notifican dependencias de desarrollo vulnerables (backend: dos bajas y cuatro moderadas; frontend: siete moderadas); no se incorporan al runtime validado. La auditoría es la observación de esta fecha, no una garantía de ausencia de fallos.
+
+La etiqueta identifica una versión del repositorio; no acredita un despliegue en el servidor de destino. Quedan pendientes la configuración y verificación de ese servidor, la ruta pública `/crm_sac`, HTTPS, controles de acceso y la validación integrada con su base y correo. El Compose compilado mantiene su API sin `DB_*` por defecto y el frontend conserva el destino interno de Docker; desplegar sin Docker requiere adaptar y probar esa configuración. Esta comprobación resuelve la reconstrucción de imágenes pendiente del apartado anterior, pero no comprueba el aspecto de un correo recibido en Outlook.
