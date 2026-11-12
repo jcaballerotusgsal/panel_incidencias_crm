@@ -17,8 +17,8 @@
   "dependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
-    "@nestjs/platform-express": "^11.0.0",
-    "@nestjs/swagger": "^11.0.0",
+    "@nestjs/platform-express": "^11.2.9",
+    "@nestjs/swagger": "^11.4.8",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "mysql2": "^3.24.6",
