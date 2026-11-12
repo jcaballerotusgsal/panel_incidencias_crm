@@ -264,3 +264,112 @@ La integración de `feat/formulario-nueva-queja` (`9c39d25`) en `develop` combin
 La primera espera de salud local obtiene 500 mientras el backend reiniciado termina su instalación y arranque; los logs muestran `ECONNREFUSED`. Una vez disponible, la salud directa y mediante el proxy responde 200 y el smoke pasa. No se modifica el frontend para ocultar ese estado transitorio.
 
 La validación compilada usa un proyecto Docker separado y sin conexión al CRM: no crea quejas ni accede a producción. Sus contenedores y red se retiran al terminar, sin borrar volúmenes. La prueba local de desarrollo mantiene únicamente el efecto sintético del smoke documentado. Los avisos de dependencias de npm durante el build siguen pendientes de revisión; no se modifican versiones ni lockfiles automáticamente. Esta comprobación resuelve el pendiente de construcción y arranque compilado de la v2; conserva los límites de autenticación, permisos generales, HTTPS, idempotencia, pruebas de alta persistente y despliegue real.
+
+## Ajuste del código AMB en apellidos — 2 de noviembre de 2026
+
+La rama `fix/ajustes-codigo-apellido` parte de `develop` en `598a542`. La consulta solo habilita la comparación con `dp_apellidos` cuando el identificador recortado empieza por QU, sin distinguir mayúsculas. El repositorio pasa ese permiso como parámetro 0/1 del SQL fijo y conserva la coincidencia completa del identificador y el id de incidencia. DNI y correo no requieren QU. Un apellido sin ese prefijo que no coincida por los otros campos responde 404, registra `Valida = 0` y no lee expedientes. El DTO no rechaza globalmente identificadores sin QU; su descripción Swagger explica la condición.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Tipos del backend y frontend | Correctos |
+| Compilación NestJS y pruebas del backend | 168 correctas: diez regresiones nuevas para apellidos sin QU, variantes de mayúsculas, DNI/correo y código o incidencia no coincidentes |
+| SQL del repositorio sobre fuentes derivadas sintéticas en MySQL 5.7.21 | 14 casos correctos: prefijo, igualdad completa, id, espacios, intercalación existente, DNI/correo, nulos y parámetros de entrada; ninguna lectura de registros del CRM ni escritura |
+| Lint del frontend | Sin errores; permanece la advertencia previa de `postcss.config.mjs` |
+| Smoke a través de Next.js | Correcto después de reiniciar el backend y esperar su estado healthy; solo conserva el log sintético habitual de la consulta 404 |
+| Guía de funcionamiento | 137 enlaces relativos existentes, bloques cerrados y UTF-8 sin caracteres de sustitución |
+
+Las pruebas HTTP usan el repositorio real con una dependencia de datos simulada; la comprobación adicional ejecuta su SQL en MySQL sobre SELECT sintéticos, conservando las condiciones y las intercalaciones de comparación. No se realiza una consulta positiva con incidencias personales reales. No se cambia el esquema, el contenido histórico, las dependencias, los lockfiles ni el frontend. No se repiten navegador, construcción de imágenes o despliegue; no se ha confirmado ninguna regla adicional del formato AMB aparte del prefijo solicitado.
+
+## Avisos de alta y estado — 4 de noviembre de 2026
+
+La rama `feat/notificaciones-correo-quejas` parte de `develop` en `a36e502`. El alta registra dos avisos en su transacción y un trigger manual registra cambios de `crm_expediente.estado` del CRM PHP. El consumidor independiente permite Microsoft Graph y SMTP, con reservas y reintentos por destinatario. La configuración local conserva el envío desactivado hasta autorizar una aplicación de Microsoft 365.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Tipos del backend | Correctos |
+| Compilación NestJS y pruebas del backend | 197 correctas, sin fallos; incluye altas con fallo de cola, reservas, reintentos, token, apagado y proveedor |
+| Microsoft Graph simulado, sin acceso externo | Mensajes independientes, token reutilizado/invalidation tras 401, permisos 403, límites 429/Retry-After, fallo 503 y validación de destinatario correctos |
+| SMTP real sobre loopback de la prueba | Dos mensajes con destinatarios e identificadores independientes, capturados por un servidor de prueba sin entrega externa |
+| Preflight MySQL local | Versión exacta 5.7.21, tablas InnoDB, binlog desactivado, cola y triggers de expediente ausentes antes de instalar |
+| Instalación manual de SQL 002 y 003 | Correcta con la cuenta administradora local tras rechazo CREATE de la cuenta de API; sin cambios de permisos, vistas ni columnas originales |
+| SQL real de altas y trigger | Cinco escenarios sintéticos: avisos de alta, cambio de estado, estado sin cambios, NULL y ROLLBACK; todas las filas revertidas |
+| SQL real de reservas en MySQL 5.7.21 | Orden por incidencia/destinatario, reintento diferido, dirección interna fijada, recuperación de reserva caducada y rechazo de token anterior correctos; todo revertido |
+| Tipos y lint del frontend | Tipos correctos, sin errores de lint; conserva la advertencia previa de `postcss.config.mjs` |
+| Smoke a través de Next.js tras arrancar/recrear la API | Correcto: consulta, resultado, formulario y catálogos; solo genera el log sintético habitual del 404 |
+| Ambos Compose con el perfil notificaciones | `config --quiet` correcto, sin imprimir secretos |
+| Imagen de desarrollo y arranque de correo-worker | Construcción correcta y proceso iniciado; logs confirman envío desactivado, sin puerto publicado para el worker |
+| Documentación | 218 enlaces relativos existentes y UTF-8 comprobados en 29 documentos |
+
+Se actualizan manifiesto y lockfile con Nodemailer 10.3.1 y sus tipos 8.0.2. Se mantienen Node.js 24, NestJS 11, MySQL 5.7.21 y las versiones del frontend. El consumidor no instala paquetes ni comparte otro watcher; se detiene junto con backend al cambiar dependencias.
+
+No se han enviado correos externos ni se han registrado credenciales/permisos en Microsoft 365. Queda pendiente configurar tenant, aplicación, secreto y autorización del buzón por el administrador, y comprobar un envío real autorizado. No se modifica PHP, no se notifican cambios históricos ni se conservan filas sintéticas de estas pruebas SQL; las secuencias autoincrementales pueden avanzar. No se repiten navegador ni construcción/arranque de imágenes de producción en esta rama. Antes de ampliar el uso siguen pendientes autenticación, despliegue, conservación, monitorización y gestión administrativa de avisos fallidos. La entrega al buzón y la ausencia absoluta de duplicados no están garantizadas por una aceptación del proveedor.
+
+## Preparación de la integración en develop — 6 de noviembre de 2026
+
+Antes de guardar e integrar las notificaciones se repiten tipos de backend/frontend, compilación y las 197 pruebas del backend, lint y smoke a través de Next.js: todo correcto, con la advertencia previa de postcss.config.mjs. Las pruebas no envían correos externos ni crean quejas reales. Se mantiene .env fuera de Git; la comprobación del envío real con Microsoft 365 queda fuera de esta integración.
+
+## Identidad visual DIREXIS TUSGSAL — 6 de noviembre de 2026
+
+La rama `feat/estilos-corporativos-direxis-tusgsal` parte de `develop` en `5f66dea`. Añade la paleta solicitada (`#f5a810` y `#64666b`), clases compartidas de Tailwind 4, cabecera/pie corporativos, navegación activa y logo intercambiable desde `frontend/public/brand/logo-direxis-tusgsal.png`. Adapta consulta, queja, confirmación, resultado y la pantalla de demostración; no cambia contratos de API ni operaciones de datos. Las instrucciones del logo están en [identidad-corporativa.md](identidad-corporativa.md).
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Tipos del frontend | Correctos |
+| Lint del frontend | Sin errores; conserva la advertencia previa de `postcss.config.mjs` |
+| Smoke a través de Next.js | Correcto: rutas, formularios, calendario y catálogos; solo crea el log sintético habitual del 404 |
+| Edge headless: paleta y foco | Botón con RGB exacto del amarillo, texto gris corporativo y foco visible; contraste de los textos principales comprobado, sin constituir una auditoría completa de accesibilidad |
+| Edge: adaptación | Inicio a 320/375 px, ficha y queja a 375 px sin desbordamiento horizontal; capturas de escritorio a 1440 px |
+| Edge: logo | Ruta fija comprobada, texto provisional con 404 simulado y carga correcta de un PNG de prueba; sin modificar ni instalar un logo oficial |
+| Edge: formularios con API simulada | Consulta encontrada/no encontrada, campos ocultos, navegación activa, 16 campos y seis obligatorios de la queja, fecha y población enviadas y confirmación correctos; sin escrituras en el CRM |
+| Documentación | 234 enlaces relativos existentes y UTF-8 comprobados en 30 documentos |
+
+Se revisan capturas del inicio y de los formularios/ficha, guardadas solo en `.local/browser/` con datos sintéticos. No se añaden dependencias, servicios, cambios de base de datos ni código de backend. Las pruebas de backend, las imágenes de producción y el envío real de correo no se repiten para esta modificación de presentación. Queda pendiente comprobar el aspecto con el logo definitivo aportado por el usuario; en modo compilado debe incluirse en el siguiente build del frontend.
+
+## Integración de la identidad corporativa en develop — 9 de noviembre de 2026
+
+Antes del commit y merge se repiten tipos, lint y smoke del frontend: correctos, con la advertencia previa de `postcss.config.mjs`. El smoke solo genera su log sintético habitual de consulta sin coincidencia; no crea quejas. El cambio conserva el backend, dependencias, configuración y contratos existentes.
+
+Se incorpora el PNG aportado por el usuario en `frontend/public/brand/logo-direxis-tusgsal.png`. Se verifica en Edge headless, sin interceptar la imagen: HTTP 200 con contenido PNG, carga en la cabecera, alternativa de texto oculta y ausencia de desbordamiento en escritorio de 1440 px y móvil de 375 px. Las capturas quedan en `.local/browser/`. No se envían formularios en esta comprobación ni se modifica el archivo del logo. Esto resuelve la comprobación pendiente del logo definitivo indicada en la revisión del 6 de noviembre; las imágenes de producción no se reconstruyen para este merge a desarrollo.
+
+## Plantilla HTML de correo al usuario — 9 de noviembre de 2026
+
+La rama `feat/plantilla-html-correo-usuario` parte de `develop` en `7a85f95`. Incorpora un único HTML editable en `backend/src/notificaciones/plantillas/usuario.html`, con bloques de alta, cambio de estado y enlace opcional, variables escapadas y diseño inicial corporativo. El solicitante usa HTML en Graph y HTML/texto en SMTP; el aviso interno conserva texto. Una plantilla ausente o inválida genera un fallo seguro reintentable antes de llamar al proveedor.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Tipos del backend | Correctos |
+| Compilación NestJS y pruebas del backend | 222 correctas, sin fallos; incluye plantilla real empaquetada, rutas de desarrollo/producción, edición sin caché, bloques opcionales, escape, URL y sintaxis inválida |
+| Graph simulado | HTML del solicitante en alta/cambio, estado escapado, texto interno, fallo de plantilla previo a la red y clasificación existente de errores correctos |
+| SMTP local de pruebas | Solicitante con multipart/alternative HTML/texto; destinatario interno solo texto; sin entrega externa |
+| Assets del CLI | Nest CLI 11.0.24 copia el HTML a `dist/notificaciones/plantillas/usuario.html`; una prueba usa esa copia real con NODE_ENV=production |
+| Lectura en desarrollo | NODE_ENV=development selecciona el original de src en cada envío, sin caché de contenido ni dependencia del watcher de Docker Desktop; las rutas y las relecturas se verifican en pruebas |
+| Vista HTML en Edge | Alta y cambio renderizados con datos sintéticos, un título visible por evento, estados y enlace correctos; escritorio de 800 px y móvil de 375 px sin desbordamiento |
+| Tipos y lint del frontend | Tipos correctos, lint sin errores; conserva la advertencia previa de postcss.config.mjs |
+| Smoke a través de Next.js | Correcto después del reinicio; solo genera el log sintético habitual de consulta 404, sin crear quejas |
+| Arranque local | Backend healthy y consumidor actualizado en ejecución con su configuración existente; el error transitorio de cola del primer ciclo no se repite en la revisión posterior |
+| Documentación | 241 enlaces relativos existentes y UTF-8 comprobados en 31 documentos |
+
+Se probó la copia mediante watcher, pero la actualización de fecha en el bind mount de Windows no propagó el cambio de forma fiable. La solución final lee directamente el original en desarrollo y utiliza los assets compilados en los demás modos; por eso editar HTML en Docker de desarrollo no requiere recompilar. Las vistas renderizadas y capturas se guardan solo en `.local/` con datos sintéticos.
+
+No se añaden dependencias, endpoints, cambios de esquema ni escrituras manuales en los datos del CRM. Se conserva el consumidor existente, que se detiene antes de reiniciar el backend por su instalación compartida y vuelve a arrancarse con el código actualizado. Las pruebas de correo emplean simulación de Graph y SMTP de loopback; no se realiza un envío manual de prueba a Microsoft 365. Quedan sin ejecutar la reconstrucción de imágenes de producción y la comprobación visual del mensaje recibido en clientes reales de correo.
+
+## Preparación de la entrega v1.0.0 — 12 de noviembre de 2026
+
+Se integra `cambios-para-pre` en `develop`, incorporando el commit `4261ad5`: backend y consumidor comparten host y puerto MySQL configurables. La validación previa a promover `develop` a `main` detecta cinco vulnerabilidades de ejecución en el backend (tres altas y dos moderadas). La rama `fix/dependencias-entrega-v1` corrige el manifiesto y el lockfile conservando NestJS 11 y Node.js 24: `@nestjs/platform-express` pasa de 11.2.7 a 11.2.9 y `@nestjs/swagger`, de 11.4.7 a 11.4.8; se actualizan las dependencias transitivas relacionadas. No se aplica `--force` ni se cambian las instalaciones de los servicios en ejecución.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Tipos de backend y frontend | Correctos; la compilación final de NestJS comprueba también los tipos con las dependencias corregidas |
+| Lint del frontend | Sin errores; conserva la advertencia previa de `postcss.config.mjs` |
+| Imágenes compiladas | Frontend y backend construidos con sus Dockerfiles de producción y `npm ci`; backend reconstruido tras la corrección de dependencias |
+| Pruebas del backend final | 222 correctas sobre la imagen de producción, con tests montados en lectura y red externa deshabilitada; Graph simulado, SMTP local y repositorios sintéticos |
+| Auditoría de ejecución | Backend final: cero vulnerabilidades indicadas por npm al podar dependencias de desarrollo; frontend: cero con `npm audit --omit=dev` |
+| Arranque compilado | Frontend y backend healthy en el proyecto separado `backoffice-release-v1-validation`, sin credenciales ni conexión a MySQL y sin consumidor de correo |
+| Smoke compilado | Correctos `/health`, `/api/health`, `/api`, consulta inicial, resultado, formulario de 16 campos y calendario, CSS/JavaScript compilados y PNG corporativo |
+| Validación y configuración pública | Cuerpos inválidos responden 400; Swagger responde 404; catálogos y consulta sin base responden 503 controlado |
+
+La prueba de humo compilada se conserva solo en `.local/release-v1-smoke.cjs`. Se usa `.env.example`, otro proyecto Compose y el puerto 3100; no se mezclan los Compose de desarrollo y producción. Se retiran al terminar únicamente los contenedores y la red de esta comprobación. No se detienen los servicios existentes ni se utilizan sus credenciales. No se ejecutan migraciones, DDL, altas, consultas al CRM externo ni envíos reales durante esta preparación.
+
+No se repite el smoke completo que genera un log 404 contra el CRM configurado: esa prueba requiere una base de integración autorizada; los flujos de datos se cubren aquí con los dobles de las 222 pruebas. Las instalaciones completas de build todavía notifican dependencias de desarrollo vulnerables (backend: dos bajas y cuatro moderadas; frontend: siete moderadas); no se incorporan al runtime validado. La auditoría es la observación de esta fecha, no una garantía de ausencia de fallos.
+
+La etiqueta identifica una versión del repositorio; no acredita un despliegue en el servidor de destino. Quedan pendientes la configuración y verificación de ese servidor, la ruta pública `/crm_sac`, HTTPS, controles de acceso y la validación integrada con su base y correo. El Compose compilado mantiene su API sin `DB_*` por defecto y el frontend conserva el destino interno de Docker; desplegar sin Docker requiere adaptar y probar esa configuración. Esta comprobación resuelve la reconstrucción de imágenes pendiente del apartado anterior, pero no comprueba el aspecto de un correo recibido en Outlook.

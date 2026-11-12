@@ -53,7 +53,7 @@ El constructor de `IncidenciasController` pide `IncidenciasService`; NestJS se l
 
 El código puede ser un entero entre 1 y 2147483647 o una cadena de uno a diez dígitos que represente un valor dentro de ese rango. Por ejemplo, `417` y `"00417"` buscan la misma incidencia, pero la segunda forma permite conservar sus ceros en el log. Las cadenas con espacios, signos, decimales o notación exponencial se rechazan.
 
-El identificador debe ser texto, contener algún carácter distinto de espacio y tener como máximo 45 caracteres contando el texto recibido. El DTO no intenta deducir si es DNI, correo o AMB: el repositorio compara contra los tres campos.
+El identificador debe ser texto, contener algún carácter distinto de espacio y tener como máximo 45 caracteres contando el texto recibido. El DTO no impone un prefijo global porque también admite DNI y correo. El repositorio compara con esos dos campos y solo habilita `dp_apellidos` como AMB si el identificador recortado empieza por QU, sin distinguir mayúsculas.
 
 Si falla esta validación, NestJS responde 400 antes de ejecutar `IncidenciasService`. Tampoco acepta un `Valida` enviado por el cliente: el servidor calcula ese valor. `transform: true` no autoriza a convertir cualquier dato libremente; los validadores del DTO siguen definiendo qué es aceptable.
 

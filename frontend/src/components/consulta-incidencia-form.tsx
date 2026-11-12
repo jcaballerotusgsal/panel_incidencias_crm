@@ -79,7 +79,7 @@ export function ConsultaIncidenciaForm() {
           maxLength={10}
           required
           placeholder="Introduce el código de incidencia"
-          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-sky-600 focus:outline-2 focus:outline-sky-600"
+          className="form-input"
         />
       </div>
       <div>
@@ -93,13 +93,13 @@ export function ConsultaIncidenciaForm() {
           maxLength={45}
           required
           placeholder="Introduce tu DNI, correo o código AMB"
-          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-sky-600 focus:outline-2 focus:outline-sky-600"
+          className="form-input"
         />
       </div>
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-sky-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-wait disabled:opacity-50"
+        className="button-primary w-full"
       >
         {pending ? 'Consultando…' : 'Consultar incidencia'}
       </button>

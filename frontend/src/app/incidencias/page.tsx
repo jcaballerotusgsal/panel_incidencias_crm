@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Header, Footer } from "@/components/plant";
 
 import {
     IncidenciasListado,
@@ -23,23 +24,27 @@ const incidenciasDemo: Incidencia[] = [
     },
 ];
 
-/** Presenta una pantalla de incidencias con datos de demostración. */
+/** Presenta datos de demostración con la cabecera y los estilos corporativos compartidos. */
 export default function IncidenciasPage() {
     return (
-        <main className="mx-auto max-w-5xl px-6 py-10">
-            <Link href="/" className="text-sm text-sky-700 hover:underline">
+      <div className="page-shell">
+        <Header />
+        <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
+            <Link href="/" className="brand-link text-sm">
                 Volver al inicio
             </Link>
 
-            <h1 className="mt-6 text-3xl font-bold text-slate-900">
+            <h1 className="mt-6 text-3xl font-bold text-brand-ink">
                 Incidencias
             </h1>
 
-            <p className="mt-2 text-slate-600">
+            <p className="mt-2 text-brand-gray">
                 Datos de demostración. Esta pantalla no guarda cambios.
             </p>
 
             <IncidenciasListado incidencias={incidenciasDemo} />
         </main>
+        <Footer />
+      </div>
     );
 }

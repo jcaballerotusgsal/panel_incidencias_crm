@@ -82,25 +82,25 @@ export function ApiStatus() {
   const label = pending ? 'Comprobando conexión…' : error ? 'API no disponible' : 'API conectada';
 
   return (
-    <section aria-labelledby="api-title" className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+    <section aria-labelledby="api-title" className="mt-8 rounded-2xl border border-line bg-white p-6 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div>
           <h2 id="api-title" className="text-xl font-semibold">Estado de la conexión</h2>
-          <p className="mt-2 text-sm text-slate-500">Navegador → Next.js → NestJS / Express</p>
+          <p className="mt-2 text-sm text-brand-gray">Navegador → Next.js → NestJS / Express</p>
         </div>
         <button ref={refreshButton} type="button" onClick={refreshStatus} disabled={pending}
-          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-wait disabled:opacity-50">
+          className="rounded-lg bg-brand-ink px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-gray disabled:cursor-wait disabled:opacity-50">
           {pending ? 'Comprobando…' : 'Volver a comprobar'}
         </button>
       </div>
       <div aria-live="polite" aria-atomic="true" className="mt-6">
-        <p className={`font-semibold ${pending ? 'text-slate-600' : error ? 'text-rose-700' : 'text-emerald-700'}`}>{label}</p>
+        <p className={`font-semibold ${pending ? 'text-brand-gray' : error ? 'text-rose-700' : 'text-emerald-700'}`}>{label}</p>
         {error && <p className="mt-2 text-sm text-rose-700">{error} Consulta los registros de Docker.</p>}
         {!pending && health && !error && (
           <dl className="mt-5 grid gap-5 text-sm sm:grid-cols-3">
-            <div><dt className="text-slate-500">Servicio</dt><dd className="mt-1 font-medium">{health.service}</dd></div>
-            <div><dt className="text-slate-500">Comprobación</dt><dd className="mt-1 font-medium">{new Date(health.timestamp).toLocaleString('es-ES')}</dd></div>
-            <div><dt className="text-slate-500">Tiempo de respuesta</dt><dd className="mt-1 font-medium">{latency} ms</dd></div>
+            <div><dt className="text-brand-gray">Servicio</dt><dd className="mt-1 font-medium">{health.service}</dd></div>
+            <div><dt className="text-brand-gray">Comprobación</dt><dd className="mt-1 font-medium">{new Date(health.timestamp).toLocaleString('es-ES')}</dd></div>
+            <div><dt className="text-brand-gray">Tiempo de respuesta</dt><dd className="mt-1 font-medium">{latency} ms</dd></div>
           </dl>
         )}
       </div>

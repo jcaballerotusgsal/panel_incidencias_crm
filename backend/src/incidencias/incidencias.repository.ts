@@ -12,12 +12,13 @@ export class IncidenciasRepository {
   /**
    * Busca por id e identificador y obtiene la línea y los estados vinculados por id_incidencia.
    * @param id Clave primaria validada de crm_incidencia.
-   * @param identificador DNI, correo o código AMB completo, sin búsquedas parciales.
+   * @param identificador DNI, correo o código AMB completo; solo QU permite comparar con apellidos.
    * @returns Una incidencia con línea y estados ordenados por id de expediente; null si no coincide.
    * @throws ServiceUnavailableException si falla la lectura de la incidencia o de sus expedientes.
-   * @remarks Consulta expedientes solo tras validar la pareja; una lista vacía indica que no hay ninguno.
+   * @remarks El prefijo QU no distingue mayúsculas; consulta expedientes solo tras validar la pareja.
    */
   async findByCredentials(id: number, identificador: string): Promise<Incidencia | null> {
+    const permiteCodigoAmb = /^QU/i.test(identificador) ? 1 : 0;
     const rows = await this.database.read<RowDataPacket & Omit<Incidencia, 'estados_expedientes'>>(`
       SELECT
         i.id, i.fecha_recepcion, i.via_recepcion, i.atendido_por,
@@ -30,9 +31,12 @@ export class IncidenciasRepository {
         i.e_matricula, i.e_conductor, i.e_fecha, i.e_tempo
       FROM crm_incidencia AS i
       LEFT JOIN crm_lineas_tusgsal_amb AS l ON i.m_linea = l.id_linea_amb
-      WHERE i.id = ? AND (TRIM(i.dp_dni) = ? OR TRIM(i.dp_email) = ? OR TRIM(i.dp_apellidos) = ?)
+      WHERE i.id = ? AND (
+        TRIM(i.dp_dni) = ? OR TRIM(i.dp_email) = ?
+        OR (? = 1 AND TRIM(i.dp_apellidos) = ?)
+      )
       LIMIT 1
-    `, [id, identificador, identificador, identificador]);
+    `, [id, identificador, identificador, permiteCodigoAmb, identificador]);
     const incidencia = rows[0];
     if (!incidencia) return null;
 

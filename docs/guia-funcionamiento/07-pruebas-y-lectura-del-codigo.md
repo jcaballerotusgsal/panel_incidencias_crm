@@ -70,7 +70,7 @@ Sin cambiar ni ejecutar código, sigue el ejemplo de código `"00417"` e identif
 
 - En el formulario, localiza dónde se conservan los textos originales.
 - En el servicio, encuentra dónde se transforma el código a número y se recortan los espacios del identificador para buscar.
-- En el repositorio, localiza los cuatro parámetros del primer SELECT.
+- En el repositorio, localiza los cinco parámetros del primer SELECT y por qué el cuarto deshabilita AMB para ese correo sin prefijo QU.
 - En el repositorio de logs, comprueba que se guarda `"00417"` y el identificador con sus espacios.
 - En la ficha, encuentra por qué dos estados iguales se muestran una sola vez.
 

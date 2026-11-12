@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { DatabaseService } = require('../dist/database/database.service');
 const { QuejasRepository } = require('../dist/quejas/quejas.repository');
+const { NotificacionesRepository } = require('../dist/notificaciones/notificaciones.repository');
 const { isFechaSuceso, fechaHoraRecepcion } = require('../dist/quejas/validaciones');
 
 const data = {
@@ -30,8 +31,8 @@ function fixture(options = {}) {
       if (options.failAt === step) throw new Error('SQL privado con datos personales');
       if (step === 1) return [options.noLine ? [] : [{ id_linea_amb: data.linea }]];
       if (query.sql.includes('FROM crm_m_zona_poblaciones')) return [options.noZone ? [] : [{ id_m_zona: values[0] }]];
-      const table = /INSERT INTO (crm_incidencia|crm_respuesta|crm_expediente)/.exec(query.sql)?.[1];
-      return [{ affectedRows: 1, insertId: { crm_incidencia: 417, crm_respuesta: 829, crm_expediente: 931 }[table] }];
+      const table = /INSERT INTO (crm_incidencia|crm_respuesta|crm_expediente|crm_notificaciones_correo)/.exec(query.sql)?.[1];
+      return [{ affectedRows: 1, insertId: { crm_incidencia: 417, crm_respuesta: 829, crm_expediente: 931, crm_notificaciones_correo: 1000 + step }[table] }];
     },
     /** Registra el único COMMIT esperado al final. */
     async commit() { calls.push('commit'); },
@@ -42,7 +43,7 @@ function fixture(options = {}) {
   };
   const database = new DatabaseService();
   database.pool = { getConnection: async () => session };
-  return { repository: new QuejasRepository(database), calls };
+  return { repository: new QuejasRepository(database, new NotificacionesRepository(database, {})), calls };
 }
 
 /** Verifica las claves generadas, las fechas coherentes y el orden real de las tres tablas. */
@@ -62,6 +63,10 @@ test('Crea incidencia, respuesta y expediente con sus ids vinculados en una tran
   assert.deepEqual(calls[3].values, [417, '2026-10-30', momento, momento]);
   assert.match(calls[4].sql, /INSERT INTO crm_expediente[\s\S]*'Pendiente'/);
   assert.deepEqual(calls[4].values, [417, 829]);
+  assert.match(calls[5].sql, /INSERT INTO crm_notificaciones_correo/);
+  assert.equal(calls[5].values[3], 'solicitante');
+  assert.equal(calls[5].values[4], data.correo);
+  assert.deepEqual(calls[6].values, [calls[5].values[0], 417, 931, 'interno', null]);
   assert.deepEqual(calls.slice(-2), ['commit', 'release']);
   for (const call of calls.filter((item) => typeof item === 'object')) {
     assert.equal((call.sql.match(/\?/g) ?? []).length, call.values.length);
@@ -77,7 +82,7 @@ test('Rechaza una línea inexistente sin insertar filas', async () => {
 });
 
 /** No se continúan los INSERT ni se confirma si falla la lectura o cualquiera de las tablas. */
-for (const failAt of [1, 2, 3, 4]) {
+for (const failAt of [1, 2, 3, 4, 5, 6]) {
   test(`Un fallo SQL en el paso ${failAt} revierte el alta completa`, async () => {
     const { repository, calls } = fixture({ failAt });
     await assert.rejects(repository.crear(data, '2026-10-30 15:04:05'), (error) => error.getStatus() === 503);

@@ -47,7 +47,7 @@ Cuerpo JSON, ejemplo enteramente sintético:
 
 El frontend envía ambos campos originales por POST a `/api`, sin incluirlos en rutas ni parámetros de URL. El código de texto permite conservar ceros iniciales en el log; para buscar se convierte explícitamente a número. El identificador se guarda antes de recortar sus espacios exteriores para la comparación.
 
-La consulta parametrizada exige `i.id = ? AND (TRIM(i.dp_dni) = ? OR TRIM(i.dp_email) = ? OR TRIM(i.dp_apellidos) = ?)` sobre **`crm_incidencia AS i`**, nombre singular verificado en la copia local. Correo corresponde a `dp_email`; AMB corresponde a `dp_apellidos` según la regla indicada por el usuario. Se conservan las intercalaciones existentes. Se enumeran las 28 columnas de incidencia más `nom_linea_tusgsal`, con `LIMIT 1` y sin `SELECT *`.
+La consulta parametrizada exige `i.id = ? AND (TRIM(i.dp_dni) = ? OR TRIM(i.dp_email) = ? OR (? = 1 AND TRIM(i.dp_apellidos) = ?))` sobre **`crm_incidencia AS i`**, nombre singular verificado en la copia local. El backend habilita el último término con 1 solo si el identificador recortado empieza por `QU`, sin distinguir mayúsculas; en otro caso envía 0. Esta regla, solicitada el **2 de noviembre de 2026**, evita acceder mediante apellidos que no tengan ese prefijo. DNI y correo siguen comparándose sin exigir QU. El prefijo solo habilita la comparación: también deben coincidir el código completo y el id de incidencia. Un apellido sin prefijo que no coincida con DNI/correo responde el mismo 404 habitual y genera un log no válido, sin consultar expedientes. Se conservan las intercalaciones existentes, las 28 columnas de incidencia más `nom_linea_tusgsal`, `LIMIT 1` y la ausencia de `SELECT *`.
 
 El nombre procede de `LEFT JOIN crm_lineas_tusgsal_amb AS l ON i.m_linea = l.id_linea_amb`. La clave primaria de `id_linea_amb`, verificada en MySQL local, impide duplicar la incidencia. Se conserva `m_linea` como número o null y se añade `nom_linea_tusgsal` como cadena o null. Sin línea, sin correspondencia o con nombre nulo, la incidencia sigue devolviéndose y el nombre es null. No se consulta la vista completa del CRM ni se incorporan sus respuestas dependientes.
 
@@ -112,7 +112,7 @@ La v2 añade `zona` como número entero opcional: se envía `id_m_zona`, no el n
 | `linea` | Número entero en el rango INT firmado; debe existir con nombre disponible en el catálogo |
 | `zona` | Opcional, entero en el rango INT firmado o null; si se informa, debe existir con nombre disponible en `crm_m_zona_poblaciones` |
 
-La línea y, si se informa, la población se comprueban dentro de la misma transacción con bloqueo compartido. Se insertan, en este orden, `crm_incidencia`, `crm_respuesta` y `crm_expediente`, enlazando los ids generados. Todas las operaciones usan una conexión, SQL fijo y valores parametrizados. Se espera el COMMIT para responder; ante fallos se intenta ROLLBACK y se destruye la conexión si no puede revertirse.
+La línea y, si se informa, la población se comprueban dentro de la misma transacción con bloqueo compartido. Se insertan, en este orden, `crm_incidencia`, `crm_respuesta` y `crm_expediente`, enlazando los ids generados, y después dos avisos en `crm_notificaciones_correo`. Un fallo al registrar cualquiera de los avisos revierte también el alta. Todas las operaciones usan una conexión, SQL fijo y valores parametrizados. Se espera el COMMIT para responder; ante fallos se intenta ROLLBACK y se destruye la conexión si no puede revertirse.
 
 | HTTP | Significado |
 | --- | --- |
@@ -124,7 +124,7 @@ Solo se devuelven código y estado, sin datos personales ni los ids de respuesta
 
 El selector nativo del frontend produce `aaaa-mm-dd`; el formulario lo convierte a `dd-mm-aaaa` para este contrato existente, sin cambiar la validación ni el formato del backend.
 
-Este POST no crea un log de consulta de incidencias ni envía correo. La transacción impide altas parciales; perder la confirmación por red puede dejar una queja completa creada sin que el cliente lo sepa. No hay idempotencia entre reintentos. Se mantiene el alcance local autorizado; esta ampliación no añade autenticación general ni conexión a producción.
+Este POST no crea un log de consulta de incidencias. Registra los avisos de alta para el solicitante y el destinatario interno; no espera al proveedor de correo. La respuesta 201 confirma queja y avisos persistidos, no entrega de correos. Microsoft 365 y el consumidor independiente se configuran según [notificaciones-correo.md](notificaciones-correo.md). No se añade un endpoint de envío ni de cambio de estado: el CRM PHP sigue actualizando `crm_expediente.estado` y su trigger registra los avisos. La transacción impide altas parciales; perder la confirmación por red puede dejar una queja completa creada sin que el cliente lo sepa. No hay idempotencia entre reintentos. Se mantiene el alcance local autorizado; esta ampliación no añade autenticación general ni conexión a producción.
 
 ## GET /api/lineas
 

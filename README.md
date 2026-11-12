@@ -57,6 +57,8 @@ La pantalla inicial envía código e identificador a `POST /api/incidencias/cons
 
 El servicio MySQL debe contener una copia local autorizada del CRM; no se importa ni modifica automáticamente. La configuración y procedencia se describen en [docs/base-de-datos/README.md](docs/base-de-datos/README.md). `/api/health` comprueba únicamente el proceso NestJS y declara `database: "not-checked"`.
 
+Para añadir el logo corporativo, coloca un PNG en `frontend/public/brand/logo-direxis-tusgsal.png` y recarga. Los colores DIREXIS TUSGSAL y las instrucciones completas están en [identidad corporativa](docs/identidad-corporativa.md).
+
 ## 3. Código que debes editar
 
 ```text
@@ -139,5 +141,7 @@ docker compose down
 Consulta [docs/docker.md](docs/docker.md). Requiere los dos lockfiles y no se combina con el Compose de desarrollo. Añade autenticación, autorización y un proxy HTTPS antes de publicar una aplicación real.
 
 ## Documentación y validación
+
+Los avisos de alta y cambio de estado están implementados mediante una cola y un trigger de MySQL, con un consumidor separado para Microsoft 365. El envío permanece desactivado hasta configurar la aplicación de Entra. Consulta [notificaciones de correo](docs/notificaciones-correo.md) para activar el servicio y cambiar remitente/destinatario interno.
 
 Para entender la aplicación paso a paso, empieza por la [guía de funcionamiento](docs/guia-funcionamiento/README.md). [docs/README.md](docs/README.md) reúne el resto de documentos. Las revisiones iniciales y las comprobaciones posteriores de la consulta local se recogen por separado en [docs/validacion.md](docs/validacion.md).

@@ -17,7 +17,7 @@ Metadatos locales verificados el **23 de octubre de 2026**. `id` es clave primar
 
 Las columnas de texto usan `utf8_spanish_ci`, excepto `dp_dni`, que usa `utf8_general_ci`. Se conservan sus comparaciones; no se fuerzan otras intercalaciones ni mayúsculas/minúsculas. `m_zona` tiene un índice no único y una clave foránea; los identificadores personales no son claves únicas.
 
-El formulario relaciona código con `id`, DNI con `dp_dni`, correo con `dp_email` y código AMB con `dp_apellidos`, según la instrucción del usuario. No se interpreta todo apellido histórico como un código AMB válido.
+El formulario relaciona código con `id`, DNI con `dp_dni`, correo con `dp_email` y código AMB con `dp_apellidos`, según la instrucción del usuario. Desde el **2 de noviembre de 2026**, la comparación con `dp_apellidos` solo se habilita si el identificador recortado empieza por QU, sin distinguir mayúsculas, y exige coincidencia completa. No se interpreta todo apellido histórico como un código AMB válido ni se transforma su contenido.
 
 La respuesta enumera estas 28 columnas de una sola fila, incluidos valores nulos, y añade `nom_linea_tusgsal` desde el catálogo de líneas y `estados_expedientes` desde sus expedientes (30 propiedades). Las fechas se serializan como texto de MySQL, sin introducir conversiones de zona horaria. Los campos de actualización no se interpretan como actualización automática.
 
@@ -74,3 +74,7 @@ Metadatos locales contrastados el **30 de octubre de 2026** para el alta de quej
 | `respuesta_created_date`, `respuesta_date_updated` | `datetime`, nullable, default `CURRENT_TIMESTAMP`, sin `ON UPDATE` |
 
 El alta proporciona expresamente todas estas columnas salvo el id generado. Los textos iniciales y el uso de dirección, motivo, idioma vacío y fechas se describen en [altas-quejas.md](altas-quejas.md); no se cambian tipos ni defaults. Las nuevas filas usan `dp_apellidos` como apellidos del formulario; la regla histórica de consulta por AMB no se aplica para transformar su contenido al crear.
+
+## Cola crm_notificaciones_correo
+
+Tabla auxiliar creada manualmente el 4 de noviembre de 2026. Conserva una fila por evento/destinatario, referencias lógicas a incidencia y expediente, estados capturados, correo, intentos, reserva y resultado del envío. Su estructura, UTC, índices y nulabilidad se describen en [notificaciones-correo.md](notificaciones-correo.md). No se devuelve desde la consulta pública ni se añaden columnas a su JSON.
