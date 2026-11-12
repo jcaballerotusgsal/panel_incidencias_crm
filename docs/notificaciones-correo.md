@@ -75,6 +75,8 @@ No se envían avisos de alta por inserciones realizadas desde otros programas: e
 
 ## Reintentos y operación
 
+El backend y `correo-worker` deben apuntar a la misma base. En el Compose de desarrollo ambos leen `DB_HOST` y `DB_PORT` de `.env` (por defecto `db` y `3306`), y comparten `MYSQL_DATABASE`, `MYSQL_USER` y `MYSQL_PASSWORD`. Tras cambiar la conexión, recrear ambos servicios según [Docker](docker.md). Un aviso `pendiente` con `intentos = 0` todavía no ha sido reservado: comprobar que el consumidor está activado, su conexión y sus permisos antes de revisar el proveedor de correo. El mensaje genérico de error de cola no identifica por sí solo la causa.
+
 Cada destinatario tiene su propia fila y contador. Una reserva dura 120 segundos y usa un token distinto; el proveedor se llama fuera de la transacción. Un proceso interrumpido deja una reserva recuperable. Se conserva el orden por incidencia y tipo de destinatario: un estado posterior espera al aviso anterior pendiente de ese destinatario. Un fallo permanente o agotado permite continuar los siguientes avisos.
 
 Los fallos temporales esperan 60, 120, 240… segundos, con tope de una hora para el cálculo exponencial. Se respeta una espera `Retry-After` mayor del proveedor, limitada a un día. Los fallos permanentes y los que alcanzan el máximo quedan `fallido`; no hay reenvío administrativo automático. Un correo histórico ausente o inválido falla para el solicitante sin impedir el aviso interno. Los errores registrados son códigos seguros, sin tokens, correos ni respuestas externas.
