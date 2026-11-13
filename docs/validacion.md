@@ -373,3 +373,26 @@ La prueba de humo compilada se conserva solo en `.local/release-v1-smoke.cjs`. S
 No se repite el smoke completo que genera un log 404 contra el CRM configurado: esa prueba requiere una base de integración autorizada; los flujos de datos se cubren aquí con los dobles de las 222 pruebas. Las instalaciones completas de build todavía notifican dependencias de desarrollo vulnerables (backend: dos bajas y cuatro moderadas; frontend: siete moderadas); no se incorporan al runtime validado. La auditoría es la observación de esta fecha, no una garantía de ausencia de fallos.
 
 La etiqueta identifica una versión del repositorio; no acredita un despliegue en el servidor de destino. Quedan pendientes la configuración y verificación de ese servidor, la ruta pública `/crm_sac`, HTTPS, controles de acceso y la validación integrada con su base y correo. El Compose compilado mantiene su API sin `DB_*` por defecto y el frontend conserva el destino interno de Docker; desplegar sin Docker requiere adaptar y probar esa configuración. Esta comprobación resuelve la reconstrucción de imágenes pendiente del apartado anterior, pero no comprueba el aspecto de un correo recibido en Outlook.
+
+## Configuraciones de PM2 — 13 de noviembre de 2026
+
+La rama `feat/configuracion-pm2` parte de `develop` en `2da7d99`. Añade `frontend/ecosystem.config.js` para el servidor standalone, y `backend/ecosystem.config.js` para API y consumidor. Cada proceso utiliza una instancia fork, sin watcher, con rutas basadas en el directorio del archivo. Los ejemplos de entorno están separados del `.env` de Docker y no contienen credenciales; el del backend mantiene el envío desactivado. `API_INTERNAL_URL` permite compilar el frontend para un backend local, conservando el destino Docker por defecto. No se cambia la ruta pública a `/crm_sac`.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| Sintaxis de ambos ecosystems | Correcta mediante `node --check` en Windows; el Node disponible en el host es 22.14.0 y no se usa para ejecutar la aplicación |
+| Tipos del frontend | Correctos con Node.js 24 en el contenedor de desarrollo |
+| Lint del frontend | Sin errores; solo la advertencia previa de `postcss.config.mjs` |
+| Build para PM2 | Correcto con Node.js 24, `API_INTERNAL_URL=http://127.0.0.1:3001` y copia de `public`/`.next/static` a standalone |
+| Arranque mediante PM2 7.1.2 | Tres procesos reales online, en fork y con entorno de producción: `crm-sac-frontend`, `crm-sac-api`, `crm-sac-correo` |
+| Smoke bajo PM2 | Health de API directo y mediante frontend correctos; inicio, formulario de queja, CSS y PNG accesibles; Swagger 404 y catálogo sin base 503 |
+| Consumidor y entorno | Node carga el `.env` sintético; el consumidor confirma envío desactivado; sin conexión a MySQL ni llamadas externas |
+| Archivos privados | `backend/.env` y `frontend/.env.production.local` ignorados por Git; UTF-8 y `git diff --check` correctos |
+
+El arranque integrado se prueba en un contenedor Linux temporal con Node.js 24, PM2 instalado solo en `/tools`, el frontend recién compilado y el backend compilado de la entrega validada anterior, cuyo código de ejecución no cambia en esta rama. Se utiliza `--network none`, sin publicar puertos y con variables sintéticas; los archivos reales del servidor y el `.env` raíz no se cargan. Los tres procesos y su daemon PM2 se cierran al terminar. No se instalan herramientas globales ni se cambian dependencias del proyecto, las imágenes de despliegue o los servicios habituales.
+
+El Dockerfile y el smoke de esta comprobación quedan solo en `.local/`. No se repiten las 222 pruebas del backend, cuyo código compilado no se modifica; la comprobación de esta rama se centra en la configuración de procesos y el rewrite del frontend. Tampoco se ejecuta el smoke que escribe un log en el CRM externo. Quedan pendientes el arranque/parada de PM2 en el Windows Server de destino, sus permisos y arranque tras reinicio, la conexión autorizada de datos y el proveedor de correo. Las limitaciones del cierre por señales en Windows se explican en [pm2.md](pm2.md).
+
+### Puertos finales e integración — 13 de noviembre de 2026
+
+Antes del commit y los merges solicitados, los ecosystems se ajustan a frontend **3010** y API **3011**. El ejemplo de `API_INTERNAL_URL` y la guía se actualizan al destino `http://127.0.0.1:3011`; los puertos internos de Docker se conservan. Se repite la comprobación de sintaxis de ambos archivos y se recompila el frontend con el destino nuevo en un contenedor temporal Node.js 24. El smoke con PM2 7.1.2 confirma tres procesos online, API directa en 3011 y a través de 3010, páginas, CSS y logo, Swagger 404 y errores 503 controlados sin base de datos. El consumidor confirma envío desactivado. El script `.local/verify-pm2-3010.cjs` cierra su daemon y procesos al terminar; no hay acceso al CRM ni cambios de configuración en los servicios habituales.

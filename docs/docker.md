@@ -124,6 +124,8 @@ docker compose exec frontend npm audit
 
 ## Modo compilado
 
+Para ejecutar los mismos procesos sin Docker, véase [PM2 en Windows](pm2.md). Las configuraciones de PM2 no se utilizan desde Compose. `API_INTERNAL_URL` conserva el destino Docker predeterminado; los archivos de entorno locales del frontend están excluidos de su contexto de imagen.
+
 **No mezcles los dos Compose mediante dos argumentos `-f`.** El segundo archivo es completo e independiente, no un override. Primero termina el modo desarrollo; no elimina volúmenes:
 
 ```bash

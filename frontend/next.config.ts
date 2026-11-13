@@ -8,11 +8,12 @@ const nextConfig: NextConfig = {
   // El servidor se enlaza a 0.0.0.0 en Docker; el navegador también accede por este loopback.
   allowedDevOrigins: ['127.0.0.1'],
 
-  /** Reenvía la API al servicio de Docker, sin exponer su nombre al navegador. */
+  /** Reenvía la API al destino interno del build; conserva el servicio Docker por defecto. */
   async rewrites() {
+    const apiOrigin = (process.env.API_INTERNAL_URL || 'http://backend:3001').replace(/\/+$/, '');
     return [{
       source: '/api/:path*',
-      destination: 'http://backend:3001/api/:path*',
+      destination: `${apiOrigin}/api/:path*`,
     }];
   },
 

@@ -24,7 +24,7 @@ El navegador solicita `/api/health` al mismo origen que sirve la web. `frontend/
 
 No escribas `http://backend:3001` en código que se ejecute en el navegador. No escribas `localhost:3001` desde un contenedor esperando alcanzar el otro: cada contenedor tiene su propio localhost.
 
-La dirección interna está fijada en `next.config.ts`. Cambiar el nombre del servicio o su puerto interno requiere actualizar la regla y reconstruir el frontend compilado. Cambiar únicamente `FRONTEND_PORT` o `BACKEND_PORT` en `.env` modifica los puertos del host, no esta red interna.
+La dirección interna se configura mediante `API_INTERNAL_URL` al compilar, con `http://backend:3001` como valor predeterminado para Docker. Cambiar el nombre del servicio o su puerto interno requiere actualizar esa variable y reconstruir el frontend compilado. Cambiar únicamente `FRONTEND_PORT` o `BACKEND_PORT` en `.env` modifica los puertos del host, no esta red interna. La ejecución sin Docker utiliza los ecosystems de PM2 y los archivos de entorno separados descritos en [pm2.md](pm2.md).
 
 La regla de proxy no incorpora autenticación. Cualquier endpoint de NestJS situado bajo `/api` puede quedar accesible por Next.js: aplicar guardas y permisos en el backend antes de añadir información sensible.
 
