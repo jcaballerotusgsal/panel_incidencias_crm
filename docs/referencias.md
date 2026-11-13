@@ -1,5 +1,12 @@
 # Referencias oficiales
 
+PM2, consultadas el 13 de noviembre de 2026:
+
+- [PM2: ecosystem, cwd, entorno y argumentos de Node](https://pm2.keymetrics.io/docs/usage/application-declaration/).
+- [PM2: cierre ordenado y particularidades de Windows](https://pm2.keymetrics.io/docs/usage/signals-clean-restart/).
+- [Node.js 24: archivos de entorno](https://nodejs.org/download/release/v24.0.2/docs/api/cli.html#--env-fileconfig).
+- [Next.js: salida standalone y copia de assets](https://nextjs.org/docs/app/api-reference/config/next-config-js/output).
+
 Plantilla de correo, consultadas el 9 de noviembre de 2026:
 
 - [Microsoft Graph: cuerpo del mensaje en texto o HTML](https://learn.microsoft.com/en-us/graph/api/resources/itembody?view=graph-rest-1.0).
