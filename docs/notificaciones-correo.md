@@ -1,5 +1,7 @@
 # Avisos por correo de las quejas
 
+La ejecución del consumidor sin Docker se configura en `backend/ecosystem.config.js`, junto con la API. Ambos leen `backend/.env` con nombres `DB_*`; el ejemplo mantiene el envío desactivado. Consulta [PM2 en Windows](pm2.md) para compilar, arrancar y reiniciar cada proceso.
+
 El alta web y los cambios de `crm_expediente.estado` generan dos avisos independientes: uno al correo de la queja y otro al destinatario interno configurado. El proveedor elegido es Microsoft 365 mediante Microsoft Graph. El envío está **desactivado por defecto** hasta configurar la aplicación de Microsoft 365.
 
 ## Recorrido de un aviso

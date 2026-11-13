@@ -1,0 +1,40 @@
+/** Ejecuta la API y un único consumidor compilados; Node.js 24 carga backend/.env, sin leer el .env de Docker. */
+module.exports = {
+  apps: [{
+    name: 'crm-sac-api',
+    cwd: __dirname,
+    script: 'dist/main.js',
+    interpreter: 'node',
+    node_args: ['--env-file=.env'],
+    exec_mode: 'fork',
+    instances: 1,
+    watch: false,
+    autorestart: true,
+    restart_delay: 5000,
+    min_uptime: '10s',
+    max_restarts: 10,
+    kill_timeout: 15000,
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3011,
+      ENABLE_SWAGGER: 'false',
+    },
+  }, {
+    name: 'crm-sac-correo',
+    cwd: __dirname,
+    script: 'dist/notificaciones/worker.js',
+    interpreter: 'node',
+    node_args: ['--env-file=.env'],
+    exec_mode: 'fork',
+    instances: 1,
+    watch: false,
+    autorestart: true,
+    restart_delay: 5000,
+    min_uptime: '10s',
+    max_restarts: 10,
+    kill_timeout: 45000,
+    env: {
+      NODE_ENV: 'production',
+    },
+  }],
+};
