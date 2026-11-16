@@ -296,7 +296,7 @@ export function FormularioQueja() {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-brand-gray">Recibirás un código al completar el registro.</p>
-        <button type="submit" disabled={enviando || catalogo.estado !== 'disponible' || lineas.length === 0} className="button-primary">{enviando ? 'Enviando…' : 'Enviar queja'}</button>
+        <button type="submit" disabled={enviando || catalogo.estado !== 'disponible' || lineas.length === 0} className="button-primary">{enviando ? 'Enviando…' : 'Enviar incidencia'}</button>
       </div>
       <div aria-live="polite">{error && <p role="alert" className="text-sm text-rose-700">{error}</p>}</div>
     </form>
