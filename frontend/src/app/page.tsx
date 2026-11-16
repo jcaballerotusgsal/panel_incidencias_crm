@@ -18,9 +18,9 @@ export default function HomePage() {
             Consulta la información y el estado de tu incidencia de forma sencilla.
           </p>
           <div className="mt-8 hidden max-w-md border-l-4 border-brand-yellow pl-5 lg:block">
-            <p className="text-sm font-semibold">¿Quieres comunicarnos una queja?</p>
-            <Link href="/quejas/nueva" className="brand-link mt-2 inline-flex items-center gap-2 text-sm">
-              Crear una queja <span aria-hidden="true">↗</span>
+            <p className="text-sm font-semibold">¿Quieres comunicarnos una incidencia?</p>
+            <Link href="/incidencias/nueva" className="brand-link mt-2 inline-flex items-center gap-2 text-sm">
+              Crear una incidencia <span aria-hidden="true">↗</span>
             </Link>
           </div>
         </div>

@@ -36,7 +36,7 @@ const camposPersonales: readonly Campo[] = [
   { nombre: 'codigoPostal', etiqueta: 'Código postal', autoComplete: 'postal-code', placeholder: 'Ej. 08911', maxLength: 20 },
   { nombre: 'telefono', etiqueta: 'Teléfono', tipo: 'tel', autoComplete: 'tel', maxLength: 45 },
   { nombre: 'correo', etiqueta: 'Correo electrónico', tipo: 'email', autoComplete: 'email', obligatorio: true, placeholder: 'nombre@ejemplo.com', maxLength: 45 },
-  { nombre: 'dni', etiqueta: 'DNI', autoComplete: 'off', maxLength: 10 },
+  { nombre: 'dni', etiqueta: 'DNI', autoComplete: 'off', obligatorio: true, maxLength: 10 },
 ];
 
 /**
@@ -296,7 +296,7 @@ export function FormularioQueja() {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-brand-gray">Recibirás un código al completar el registro.</p>
-        <button type="submit" disabled={enviando || catalogo.estado !== 'disponible' || lineas.length === 0} className="button-primary">{enviando ? 'Enviando…' : 'Enviar queja'}</button>
+        <button type="submit" disabled={enviando || catalogo.estado !== 'disponible' || lineas.length === 0} className="button-primary">{enviando ? 'Enviando…' : 'Enviar incidencia'}</button>
       </div>
       <div aria-live="polite">{error && <p role="alert" className="text-sm text-rose-700">{error}</p>}</div>
     </form>

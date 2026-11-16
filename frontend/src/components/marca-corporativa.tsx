@@ -44,7 +44,7 @@ export function NavegacionPrincipal() {
   const pathname = usePathname();
   const enlaces = [
     { href: '/', texto: 'Consultar incidencia', activo: pathname === '/' || pathname === '/incidencias/resultado' },
-    { href: '/quejas/nueva', texto: 'Crear una queja', activo: pathname === '/quejas/nueva' },
+    { href: '/quejas/nueva', texto: 'Crear una incidencia', activo: pathname === '/quejas/nueva' },
   ];
 
   return (
