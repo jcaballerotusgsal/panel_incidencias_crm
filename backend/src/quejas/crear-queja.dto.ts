@@ -58,11 +58,11 @@ export class CrearQuejaDto {
   correo!: string;
 
   @ApiPropertyOptional({ type: String, maxLength: 10, nullable: true })
-  @IsOptional()
   @Transform(recortarTexto)
   @IsString()
+  @IsNotEmpty({ message: 'El DNI es obligatorio.' })
   @MaxLength(10)
-  dni?: string | null;
+  dni?: string;
 
   @ApiProperty({ example: '30-10-2026', description: 'Fecha real del suceso, en formato dd-mm-aaaa.' })
   @Transform(recortarTexto)

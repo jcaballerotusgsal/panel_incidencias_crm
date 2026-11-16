@@ -36,7 +36,7 @@ const camposPersonales: readonly Campo[] = [
   { nombre: 'codigoPostal', etiqueta: 'Código postal', autoComplete: 'postal-code', placeholder: 'Ej. 08911', maxLength: 20 },
   { nombre: 'telefono', etiqueta: 'Teléfono', tipo: 'tel', autoComplete: 'tel', maxLength: 45 },
   { nombre: 'correo', etiqueta: 'Correo electrónico', tipo: 'email', autoComplete: 'email', obligatorio: true, placeholder: 'nombre@ejemplo.com', maxLength: 45 },
-  { nombre: 'dni', etiqueta: 'DNI', autoComplete: 'off', maxLength: 10 },
+  { nombre: 'dni', etiqueta: 'DNI', autoComplete: 'off', obligatorio: true, maxLength: 10 },
 ];
 
 /**
