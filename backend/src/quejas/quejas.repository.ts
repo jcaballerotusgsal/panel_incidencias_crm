@@ -11,7 +11,7 @@ export class QuejasRepository {
   constructor(private readonly database: DatabaseService, private readonly notificaciones: NotificacionesRepository) {}
 
   /**
-   * Verifica las opciones, crea las tres filas relacionadas y registra dos avisos antes de COMMIT.
+   * Verifica las opciones, crea respuesta y expediente en estado Pendiente y registra dos avisos antes de COMMIT.
    * @param datos Campos ya validados, con dirección postal y detalle preparados por el servicio.
    * @param momento Fecha/hora de recepción del servidor, idéntica para todos los campos de registro.
    * @returns Id de la incidencia solo después de confirmar la transacción completa.
@@ -68,7 +68,7 @@ export class QuejasRepository {
         INSERT INTO crm_respuesta (
           id_incidencia, estado, fecha, medio, tiempo, respuesta, estado2, observaciones,
           respuesta_created_date, respuesta_date_updated
-        ) VALUES (?, 'pendiente', ?, 'correo electronico', NULL, '', 'abierta', '', ?, ?)
+        ) VALUES (?, 'Pendiente', ?, 'correo electronico', NULL, '', 'abierta', '', ?, ?)
       `, [incidenciaId, momento.slice(0, 10), momento, momento]);
       const expedienteId = await transaction.insert(`
         INSERT INTO crm_expediente (id_incidencia, id_resolucion, estado)

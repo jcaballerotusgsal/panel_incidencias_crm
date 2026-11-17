@@ -1,5 +1,11 @@
 # Validación de la entrega
 
+## HTML interno y presentación de estados — 17 de noviembre de 2026
+
+En `feat/correo-cambio-estado-crm`, solicitante e interno utilizan el mismo archivo `usuario.html`. Graph recibe HTML en ambos casos; SMTP conserva HTML y texto alternativo. Una plantilla inválida produce un fallo reintentable para ambos destinatarios. El estado anterior se presenta rojo y normal, y el nuevo verde y en negrita en cambios de estado. El alta inserta `crm_respuesta.estado = 'Pendiente'`, sin reescribir filas anteriores.
+
+Comprobaciones ejecutadas en el backend Docker: tipos y compilación correctos; 82 pruebas de notificaciones, plantilla y repositorio de quejas correctas, con Graph simulado, SMTP de loopback y dobles de SQL. Se actualizó una expectativa antigua que todavía exigía `pendiente` tras la primera ejecución. No se enviaron correos externos, no se escribieron datos en el CRM y no se ejecutó la suite HTTP completa. Queda pendiente verificar la apariencia en Outlook real. Para distribuirlo con PM2, compilar backend y reiniciar API y `crm-sac-correo`; no requiere modificar tablas ni triggers.
+
 ## Corrección del origen de notificaciones — 17 de noviembre de 2026
 
 En `feat/correo-cambio-estado-crm`, el usuario confirma `crm_respuesta.estado` como origen del cambio. SQL 003 escucha esa tabla; SQL 002 permite expediente ausente en instalaciones nuevas y SQL 004 adapta manualmente la cola existente. No se modifica ninguna tabla original del CRM ni el estado mostrado por la consulta web.
