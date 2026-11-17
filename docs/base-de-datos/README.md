@@ -35,4 +35,6 @@ La ampliación solicitada el **28 de octubre de 2026** incorpora `crm_logs_consu
 
 ## Avisos de alta y estado — 4 de noviembre de 2026
 
+**Actualización del 17 de noviembre de 2026:** el origen confirmado por el usuario es `crm_respuesta.estado`. Se prepara el SQL 003 corregido y el SQL 004 para permitir `id_expediente` NULL únicamente en la tabla auxiliar de avisos existente. No se ejecutan en el CRM automáticamente. La instalación histórica del trigger de expediente descrita debajo queda sustituida por el procedimiento manual de [notificaciones-correo.md](../notificaciones-correo.md#sustituir-el-trigger-de-expediente-por-el-de-respuesta).
+
 Se verifica MySQL 5.7.21 y se crean manualmente `crm_notificaciones_correo` y el trigger AFTER UPDATE de `crm_expediente.estado`, por petición expresa del usuario. No se alteran las tablas originales, sus vistas ni sus definidores; no se cambian permisos. El alta web registra dos avisos antes de COMMIT y los cambios de estado los registran mediante trigger. El consumidor usa SELECT/UPDATE en la nueva cola; los detalles y pruebas sintéticas revertidas están en [notificaciones-correo.md](notificaciones-correo.md). La ausencia de triggers descrita en la inspección del 30 de octubre corresponde a la situación anterior a esta ampliación.

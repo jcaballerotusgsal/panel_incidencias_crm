@@ -39,4 +39,4 @@ La v2 del **30 de octubre de 2026** utiliza la FK existente `crm_incidencia.m_zo
 
 ## Eventos y destinatarios de correo
 
-`crm_notificaciones_correo.id_incidencia` e `id_expediente` son referencias lógicas a los ids originales, sin nuevas FK. La cola conserva dos filas por evento, diferenciadas por tipo de destinatario, y admite varios eventos y expedientes por incidencia. El trigger sobre `crm_expediente.estado` utiliza la FK existente `id_incidencia` para leer el correo; no deduce un estado global entre expedientes. Véase [notificaciones-correo.md](notificaciones-correo.md).
+`crm_notificaciones_correo.id_incidencia` e `id_expediente` son referencias lógicas a los ids originales, sin nuevas FK. La cola conserva dos filas por evento, diferenciadas por tipo de destinatario. Por corrección del usuario del 17 de noviembre, el trigger sobre `crm_respuesta.estado` utiliza la FK existente `id_incidencia` para leer el correo. No se une a expedientes ni multiplica los avisos por su número: `id_expediente` es NULL en cambios de respuesta y conserva el id en altas web. Véase [notificaciones-correo.md](notificaciones-correo.md).
