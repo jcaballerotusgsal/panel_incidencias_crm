@@ -2,7 +2,7 @@
 
 La ejecución del consumidor sin Docker se configura en `backend/ecosystem.config.js`, junto con la API. Ambos leen `backend/.env` con nombres `DB_*`; el ejemplo mantiene el envío desactivado. Consulta [PM2 en Windows](pm2.md) para compilar, arrancar y reiniciar cada proceso.
 
-El alta web y los cambios de `crm_expediente.estado` generan dos avisos independientes: uno al correo de la queja y otro al destinatario interno configurado. El proveedor elegido es Microsoft 365 mediante Microsoft Graph. El envío está **desactivado por defecto** hasta configurar la aplicación de Microsoft 365.
+El alta web y los cambios de `crm_respuesta.estado` generan dos avisos independientes: uno al correo de la queja y otro al destinatario interno configurado. El proveedor elegido es Microsoft 365 mediante Microsoft Graph. El envío está **desactivado por defecto** hasta configurar la aplicación de Microsoft 365.
 
 ## Recorrido de un aviso
 
@@ -65,6 +65,35 @@ docker compose logs --tail 30 correo-worker
 La configuración incompleta impide arrancar el emisor; la API puede seguir registrando quejas y avisos sin credenciales de Microsoft. En esta implementación no se ha iniciado sesión ni configurado permisos en el tenant: ese paso corresponde al administrador. No se ha enviado ningún correo externo durante las pruebas.
 
 ## Instalación de la cola y el trigger
+
+### Sustituir el trigger de expediente por el de respuesta
+
+El **17 de noviembre de 2026** el usuario confirma que el origen correcto es `crm_respuesta.estado`. No volver a ejecutar CREATE TABLE si la cola ya existe. Revisar el esquema, permisos del definidor y triggers del destino antes de aplicar estos pasos manuales; no se han aplicado automáticamente a ningún CRM.
+
+1. En la base correcta, comprobar `SHOW CREATE TABLE crm_notificaciones_correo` y los triggers de ambas tablas. Si `id_expediente` es NOT NULL, aplicar [004-permitir-aviso-sin-expediente.sql](../backend/sql/004-permitir-aviso-sin-expediente.sql). Permitir NULL evita inventar un expediente cuando el evento pertenece a una respuesta; el alta web sigue guardando su expediente.
+2. Coordinar una ventana sin cambios de estado del CRM. Aplicar el SQL 003 actualizado para crear `crm_respuesta_notificar_estado_au`. No reemplaza un trigger existente del mismo nombre.
+3. Verificar `SHOW CREATE TRIGGER crm_respuesta_notificar_estado_au`. Solo después, retirar exclusivamente el trigger anterior del módulo:
+
+   ```sql
+   DROP TRIGGER IF EXISTS crm_expediente_notificar_estado_au;
+   ```
+
+4. Confirmar que ya no está el trigger anterior. No retirar otros triggers del CRM. Reanudar los cambios de estado; si el CRM actualiza ambas tablas y siguen activos ambos triggers, podría generar avisos duplicados.
+
+El DDL tiene COMMIT implícito en MySQL: esta sustitución no es atómica. No se borran ni se reenvían avisos existentes. El consumidor actual admite el expediente ausente y no necesita cambios de proveedor o plantilla. El cambio SQL no requiere build ni reinicio; el tipo TypeScript se ajusta a la nulabilidad. El detalle web sigue leyendo estados de expediente: esta corrección afecta solo a las notificaciones.
+
+Para verificar tras un cambio autorizado desde el CRM:
+
+```sql
+SELECT id, tipo_evento, id_incidencia, estado_anterior, estado_nuevo,
+       tipo_destinatario, estado_envio, intentos, ultimo_error
+FROM crm_notificaciones_correo
+WHERE tipo_evento = 'estado_cambiado'
+ORDER BY id DESC
+LIMIT 10;
+```
+
+Debe haber dos filas por respuesta cuyo estado haya cambiado, aunque existan varios expedientes relacionados. Si no se generan, comprobar que el CRM usa esta misma base y modifica `estado`, no `estado2`. Si quedan pendientes sin intentos, revisar el consumidor.
 
 La instalación es manual y requiere una copia de datos autorizada. No se ejecutan SQL al arrancar, ni se cambia el esquema de referencia. Sigue [la estructura y precondiciones de datos](base-de-datos/notificaciones-correo.md). El orden es:
 

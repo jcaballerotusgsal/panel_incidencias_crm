@@ -1,5 +1,11 @@
 # Validación de la entrega
 
+## Corrección del origen de notificaciones — 17 de noviembre de 2026
+
+En `feat/correo-cambio-estado-crm`, el usuario confirma `crm_respuesta.estado` como origen del cambio. SQL 003 escucha esa tabla; SQL 002 permite expediente ausente en instalaciones nuevas y SQL 004 adapta manualmente la cola existente. No se modifica ninguna tabla original del CRM ni el estado mostrado por la consulta web.
+
+Se ejecutó el SQL real en un contenedor temporal MySQL 5.7.21, sin red, con almacenamiento efímero y tablas/filas sintéticas. Pasaron cinco comprobaciones: expediente ignorado, estado igual/estado2 ignorados, dos avisos por respuesta sin multiplicarlos por expedientes, ROLLBACK de avisos y respuesta sin expediente. Se probó también el paso de NOT NULL a NULL mediante SQL 004. `docker compose exec -T backend npm run typecheck` terminó correctamente. Se retiró exclusivamente el contenedor temporal. No se accedió al CRM ni se enviaron correos externos. Queda pendiente aplicar/verificar los SQL en el destino y retirar el trigger anterior mediante el procedimiento documentado.
+
 Fecha de preparación: **14 de octubre de 2026**.
 
 ## Revisiones ejecutadas

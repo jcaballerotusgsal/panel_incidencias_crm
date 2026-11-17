@@ -4,6 +4,8 @@ Ampliación autorizada por el usuario el **4 de noviembre de 2026**: registrar a
 
 ## Procedencia y aplicación manual
 
+**Corrección del 17 de noviembre de 2026:** el usuario confirma que el CRM modifica `crm_respuesta.estado`, no `crm_expediente.estado`. El SQL 003 vigente escucha respuestas. Las verificaciones históricas siguientes corresponden al trigger anterior; no certifican el nuevo en el servidor.
+
 Antes de aplicar los SQL se verificaron en la copia local `db`: MySQL **5.7.21**, `crm_incidencia` y `crm_expediente` InnoDB, ausencia de la nueva tabla y de triggers sobre `crm_expediente`, y binlog desactivado. La cuenta de la API no tiene permiso para crear la tabla; el intento se rechazó sin crear objetos. Se aplicaron los dos SQL manualmente con la cuenta administradora local, sin modificar concesiones de permisos. No se ejecutó ningún volcado ni se accedió a producción.
 
 Scripts, en este orden:
@@ -24,7 +26,7 @@ InnoDB, `utf8mb4_unicode_ci`. Fechas DATETIME escritas explícitamente con `UTC_
 | `id` | INT autoincremental, clave primaria de la fila por destinatario |
 | `evento_id` | UUID compartido por los dos avisos del mismo evento, ASCII con comparación binaria |
 | `tipo_evento` | `queja_creada` o `estado_cambiado` |
-| `id_incidencia`, `id_expediente` | Referencias lógicas a los ids que originan el evento |
+| `id_incidencia`, `id_expediente` | Referencias lógicas; expediente se conserva en altas web y es NULL en cambios de respuesta |
 | `estado_anterior`, `estado_nuevo` | VARCHAR(20) nullable, capturados al producirse el evento; no se impone vocabulario al CRM |
 | `tipo_destinatario` | `solicitante` o `interno` |
 | `destinatario` | Correo capturado; NULL interno hasta primera reserva, o NULL si un registro histórico carece de correo |
@@ -41,9 +43,9 @@ Hay unicidad por `(evento_id, tipo_destinatario)` e índices para pendientes, re
 
 El alta web inserta ambos avisos después del expediente y antes de COMMIT, con estado `Pendiente`. El UUID procede del backend; el destinatario solicitante es el correo validado del formulario. Un fallo de cualquiera de estos INSERT revierte también las tres filas del alta.
 
-El trigger `crm_expediente_notificar_estado_au`, AFTER UPDATE por fila, compara `OLD.estado` y `NEW.estado` mediante igualdad segura ante NULL (`<=>`) y la intercalación existente. No actúa si el estado sigue siendo equivalente, aunque cambien otras columnas; los cambios solo de mayúsculas siguen la comparación de esa intercalación. Si cambia y existe `NEW.id_incidencia`, usa un UUID nuevo, captura estados anterior/nuevo, lee el correo de esa incidencia e inserta los dos avisos. Un UPDATE de varias filas puede producir varios eventos. No se consulta `crm_respuesta.estado` ni se deduce un estado global entre expedientes.
+El trigger `crm_respuesta_notificar_estado_au`, AFTER UPDATE de `crm_respuesta` por fila, compara `OLD.estado` y `NEW.estado` mediante igualdad segura ante NULL (`<=>`) y la intercalación existente. No actúa si el estado sigue siendo equivalente, aunque cambien otras columnas; los cambios solo de mayúsculas siguen la comparación de esa intercalación. Si cambia y existe `NEW.id_incidencia`, usa un UUID nuevo, captura estados anterior/nuevo, lee el correo de esa incidencia e inserta dos avisos. Un UPDATE de varias respuestas puede producir varios eventos. No se deduce un estado global de la incidencia ni se elige arbitrariamente un expediente: una respuesta puede tener varios expedientes o ninguno. Por eso `id_expediente` queda NULL en estos eventos, sin guardar un id de respuesta en una columna de expediente.
 
-El trigger no cubre INSERT/DELETE de expedientes, cambios solo de `id_incidencia`, altas de otros programas ni `crm_respuesta.estado`. No se reconstruyen ni notifican cambios históricos anteriores a su instalación. No realiza llamadas de red; su escritura es parte de la misma transacción del CRM. Si falla, falla el UPDATE. La documentación operativa está en [notificaciones-correo.md](../notificaciones-correo.md).
+El trigger no cubre INSERT/DELETE de respuestas, cambios solo de `id_incidencia`, `estado2` ni cambios en expedientes. No se reconstruyen ni notifican cambios históricos anteriores a su instalación. No realiza llamadas de red; su escritura es parte de la misma transacción del CRM. Si falla, falla el UPDATE. La documentación operativa y la sustitución del trigger anterior están en [notificaciones-correo.md](../notificaciones-correo.md).
 
 ## Reservas y datos personales
 

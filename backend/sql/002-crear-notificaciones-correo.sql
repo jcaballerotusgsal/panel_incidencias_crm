@@ -5,7 +5,7 @@ CREATE TABLE crm_notificaciones_correo (
   evento_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   tipo_evento VARCHAR(32) NOT NULL,
   id_incidencia INT NOT NULL,
-  id_expediente INT NOT NULL,
+  id_expediente INT NULL,
   estado_anterior VARCHAR(20) NULL,
   estado_nuevo VARCHAR(20) NULL,
   tipo_destinatario VARCHAR(20) NOT NULL,

@@ -61,7 +61,7 @@ La ampliación de logs añade una tabla creada manualmente en esa copia local. L
 
 ## Notificaciones de correo
 
-`NotificacionesModule` permite que `QuejasRepository` registre dos avisos de alta en la transacción del CRM. Un trigger manual AFTER UPDATE de `crm_expediente.estado` hace lo mismo para los cambios del CRM PHP. La nueva `crm_notificaciones_correo` conserva eventos y destinatarios; no se cambia la estructura de las tablas originales.
+`NotificacionesModule` permite que `QuejasRepository` registre dos avisos de alta en la transacción del CRM. Un trigger manual AFTER UPDATE de `crm_respuesta.estado` hace lo mismo para los cambios del CRM PHP. La nueva `crm_notificaciones_correo` conserva eventos y destinatarios; no se cambia la estructura de las tablas originales.
 
 El servicio opcional `correo-worker`, perfil Compose `notificaciones`, inicia un contexto NestJS sin HTTP, reserva avisos mediante MySQL y los envía a Microsoft Graph fuera de la transacción. La API y el frontend no reciben credenciales de Microsoft ni ejecutan consumidores. Hay reintentos por destinatario, reservas recuperables y protección por token; aceptar un envío no equivale a entrega en el buzón. El envío está desactivado hasta configurar la aplicación de Microsoft 365. Véanse [operación y configuración](notificaciones-correo.md) y [tabla y trigger](base-de-datos/notificaciones-correo.md).
 
