@@ -25,4 +25,6 @@ La petición posterior de **v2**, del mismo día, sustituye la regla inicial de 
 
 ## Avisos de alta y cambio de estado — 4 de noviembre de 2026
 
+**Corrección del 17 de noviembre de 2026:** el usuario confirma que el CRM cambia `crm_respuesta.estado`. La regla vigente genera dos avisos por cambio real de ese campo, no por `crm_expediente.estado` ni `estado2`. Se mantiene la transacción del UPDATE y la comparación de la intercalación existente. Los eventos de respuesta no eligen un expediente: su referencia en la cola es NULL. La lectura del detalle web sigue usando expedientes; no se cambia ese contrato en esta tarea. El párrafo siguiente describe la decisión anterior, sustituida por esta aclaración.
+
 La nueva autorización añade dos avisos por alta web y por cambio real de `crm_expediente.estado`: solicitante e interno configurable, con remitente configurable. La generación comparte la transacción de la queja o del UPDATE del CRM PHP; el envío es posterior y utiliza un proceso separado. No se impone un vocabulario nuevo a los estados históricos ni se transforma `crm_respuesta.estado`. No se notifican INSERT/DELETE de expediente ni cambios de otras columnas si el estado no cambia. Véanse [datos de notificaciones](notificaciones-correo.md) y [configuración de Microsoft 365](../notificaciones-correo.md).

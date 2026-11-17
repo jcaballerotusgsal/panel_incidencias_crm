@@ -1,9 +1,11 @@
 -- Aplicar manualmente DESPUÉS de 002; solo en la copia local autorizada.
 -- No reemplaza triggers existentes ni fija/modifica definidores históricos.
+-- Si la cola ya existe con id_expediente NOT NULL, aplicar antes 004.
+-- Tras verificar este trigger, retirar el antiguo de crm_expediente (ver docs).
 -- Un error de la cola revierte también el UPDATE del estado (misma transacción).
 DELIMITER $$
-CREATE TRIGGER crm_expediente_notificar_estado_au
-AFTER UPDATE ON crm_expediente
+CREATE TRIGGER crm_respuesta_notificar_estado_au
+AFTER UPDATE ON crm_respuesta
 FOR EACH ROW
 BEGIN
   DECLARE evento CHAR(36);
@@ -15,9 +17,9 @@ BEGIN
       (evento_id, tipo_evento, id_incidencia, id_expediente, estado_anterior, estado_nuevo,
        tipo_destinatario, destinatario, disponible_en, creado_en)
     VALUES
-      (evento, 'estado_cambiado', NEW.id_incidencia, NEW.id, OLD.estado, NEW.estado,
+      (evento, 'estado_cambiado', NEW.id_incidencia, NULL, OLD.estado, NEW.estado,
        'solicitante', correo, UTC_TIMESTAMP(), UTC_TIMESTAMP()),
-      (evento, 'estado_cambiado', NEW.id_incidencia, NEW.id, OLD.estado, NEW.estado,
+      (evento, 'estado_cambiado', NEW.id_incidencia, NULL, OLD.estado, NEW.estado,
        'interno', NULL, UTC_TIMESTAMP(), UTC_TIMESTAMP());
   END IF;
 END$$
