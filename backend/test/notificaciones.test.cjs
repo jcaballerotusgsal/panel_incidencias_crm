@@ -173,11 +173,14 @@ test('Graph envía por separado, reutiliza el token y limita el contenido del me
   assert.match(message.body.content, /417/);
   assert.equal(message.body.content.includes('prueba@example.invalid'), false);
   assert.match(calls[1].url, /users\/remitente%40example.invalid\/sendMail$/);
-  assert.equal(JSON.parse(calls[2].options.body).message.body.contentType, 'Text');
+  const internalMessage = JSON.parse(calls[2].options.body).message;
+  assert.equal(internalMessage.body.contentType, 'html');
+  assert.equal(internalMessage.body.content, message.body.content);
+  assert.deepEqual(internalMessage.toRecipients, [{ emailAddress: { address: 'interno@example.invalid' } }]);
 });
 
-/** Una plantilla rota no consume llamadas al proveedor; los avisos internos no dependen de ella. */
-test('Una plantilla inválida se reintenta y no impide enviar el aviso interno', async t => {
+/** Una plantilla rota es reintentable para ambos destinatarios y no consume llamadas al proveedor. */
+test('Una plantilla inválida se reintenta también para el aviso interno', async t => {
   t.mock.method(fs, 'readFile', async () => '{{variableNoAdmitida}}');
   const calls = [];
   t.mock.method(globalThis, 'fetch', async url => {
@@ -187,8 +190,9 @@ test('Una plantilla inválida se reintenta y no impide enviar el aviso interno',
   const correo = new CorreoService(graphConfig());
   await assert.rejects(correo.enviar(aviso), error => error.code === 'PLANTILLA_CORREO_INVALIDA' && error.permanent === false);
   assert.equal(calls.length, 0);
-  await correo.enviar({ ...aviso, tipo_destinatario: 'interno', destinatario: 'interno@example.invalid' });
-  assert.equal(calls.length, 2);
+  await assert.rejects(correo.enviar({ ...aviso, tipo_destinatario: 'interno', destinatario: 'interno@example.invalid' }),
+    error => error.code === 'PLANTILLA_CORREO_INVALIDA' && error.permanent === false);
+  assert.equal(calls.length, 0);
 });
 
 /** Graph recibe el documento HTML con estados escapados y los datos capturados por el evento. */
@@ -283,7 +287,9 @@ test('SMTP entrega dos mensajes independientes al servidor de prueba local', asy
     assert.match(smtp.messages[0].text, /Content-Type: multipart\/alternative/i);
     assert.match(smtp.messages[0].text, /Content-Type: text\/html/i);
     assert.match(smtp.messages[0].text, /Content-Type: text\/plain/i);
-    assert.equal(/Content-Type: text\/html/i.test(smtp.messages[1].text), false);
+    assert.match(smtp.messages[1].text, /Content-Type: multipart\/alternative/i);
+    assert.match(smtp.messages[1].text, /Content-Type: text\/html/i);
+    assert.match(smtp.messages[1].text, /Content-Type: text\/plain/i);
     const firstId = /Message-ID:\s*(<[^>]+>)/i.exec(smtp.messages[0].text);
     const secondId = /Message-ID:\s*(<[^>]+>)/i.exec(smtp.messages[1].text);
     assert.ok(firstId); assert.ok(secondId);

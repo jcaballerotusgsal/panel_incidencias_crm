@@ -5,6 +5,14 @@ const { crearHtmlCorreoUsuario, renderizarPlantillaUsuario, ErrorPlantillaCorreo
 
 const alta = { id_incidencia: 417, tipo_evento: 'queja_creada', estado_anterior: null, estado_nuevo: 'Pendiente' };
 
+/** El correo real distingue visualmente el estado previo y el nuevo sin depender del cliente de correo. */
+test('El cambio de estado muestra anterior rojo normal y actual verde en negrita', async () => {
+  const html = await crearHtmlCorreoUsuario({ ...alta, tipo_evento: 'estado_cambiado',
+    estado_anterior: 'Pendiente', estado_nuevo: 'Cerrada' }, '');
+  assert.match(html, /<p style="[^"]*font-weight:normal;[^"]*color:#b42318;[^"]*">Pendiente<\/p>/);
+  assert.match(html, /<p style="[^"]*font-weight:bold;[^"]*color:#15803d;[^"]*">Cerrada<\/p>/);
+});
+
 /** Verifica el archivo real copiado por Nest y los bloques opcionales del alta. */
 test('La compilación distribuye la plantilla y el alta incluye código/estado/enlace sin estado anterior', async () => {
   const mode = process.env.NODE_ENV;

@@ -34,7 +34,7 @@ export class CorreoService {
   }
 
   /**
-   * Entrega un aviso al proveedor; el solicitante usa la plantilla HTML y el interno conserva texto.
+   * Entrega un aviso al proveedor con la plantilla HTML compartida por solicitante e interno.
    * @param aviso Fila reservada; el correo interno ya está resuelto y persistido.
    * @returns Promesa cuando el proveedor acepta el envío; no confirma llegada al buzón.
    * @throws ErrorEnvio con código seguro; una plantilla inválida se puede corregir antes del reintento.
@@ -55,8 +55,7 @@ export class CorreoService {
       ...(this.config.consultationUrl ? [`Puedes consultar la incidencia en ${this.config.consultationUrl}`] : []),
     ].join('\n\n');
     try {
-      const html = aviso.tipo_destinatario === 'solicitante'
-        ? await crearHtmlCorreoUsuario(aviso, this.config.consultationUrl) : undefined;
+      const html = await crearHtmlCorreoUsuario(aviso, this.config.consultationUrl);
       if (this.config.transport === 'microsoft365') {
         await this.enviarGraph(aviso.destinatario, subject, text, aviso.evento_id, aviso.tipo_destinatario, html);
       } else {

@@ -44,7 +44,7 @@ La población procede de `crm_m_zona_poblaciones`, con `id_m_zona` como PK `int(
 | --- | --- |
 | `id_respuesta` | AUTO_INCREMENT de MySQL |
 | `id_incidencia` | Id obtenido en el paso 1 |
-| `estado` | `pendiente` |
+| `estado` | `Pendiente` (capitalización corregida por petición del 17 de noviembre de 2026; solo nuevas altas) |
 | `fecha` | Día de la recepción |
 | `medio` | `correo electronico`, únicamente como dato; no dispara un envío desde este módulo |
 | `tiempo` | NULL |

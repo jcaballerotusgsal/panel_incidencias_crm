@@ -17,6 +17,8 @@ La comparación de código e identificador es el criterio de acceso provisional 
 
 ## Alta de quejas autorizada el 30 de octubre de 2026
 
+La aclaración del **17 de noviembre de 2026** cambia únicamente la capitalización del estado inicial de respuesta a `Pendiente`. `estado2` conserva `abierta` y el expediente conserva `Pendiente`. Se aplica a nuevas altas; no se ejecutan actualizaciones sobre respuestas históricas. Las referencias a `pendiente` en la petición original describen el valor anterior.
+
 La nueva petición amplía las escrituras autorizadas: incidencia, respuesta y expediente, en ese orden y de forma transaccional. Canal `formulario web`, tipo `Queja`, idioma vacío, estados de respuesta `pendiente`/`abierta` y de expediente `Pendiente`; ids y fechas de registro pertenecen al servidor. No se cambian registros anteriores ni se impone ese vocabulario a sus estados.
 
 En la v1, la aclaración del usuario fija Dirección + CP como `dirección Cp: código postal` en el campo existente `dp_correoPostal`; no existe `dp_codigoPostal`. Inicialmente Lugar no se guarda, Motivo se escribe en `m_detalle` y `m_zona` queda NULL. Apellidos se guarda como texto de apellidos del formulario, sin convertirlo a AMB. `dp_sexo` queda NULL al no existir un campo de entrada. La especificación vigente por columna está en [altas-quejas.md](altas-quejas.md).
