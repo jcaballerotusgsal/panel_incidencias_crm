@@ -59,7 +59,7 @@ test('Crea incidencia, respuesta y expediente con sus ids vinculados en una tran
   assert.match(calls[2].sql, /'Queja'/);
   assert.deepEqual(calls[2].values, [momento, data.nombre, data.apellidos, data.dni, data.telefono, data.correo, data.direccionPostal, '2026-10-30', '14:30', 7, '0012', null, data.parada, data.sentido, data.detalle, momento, momento]);
   assert.match(calls[3].sql, /INSERT INTO crm_respuesta/);
-  assert.match(calls[3].sql, /'pendiente'[\s\S]*'correo electronico'[\s\S]*'abierta'/);
+  assert.match(calls[3].sql, /VALUES \(\?, 'Pendiente',[\s\S]*'correo electronico'[\s\S]*'abierta'/);
   assert.deepEqual(calls[3].values, [417, '2026-10-30', momento, momento]);
   assert.match(calls[4].sql, /INSERT INTO crm_expediente[\s\S]*'Pendiente'/);
   assert.deepEqual(calls[4].values, [417, 829]);

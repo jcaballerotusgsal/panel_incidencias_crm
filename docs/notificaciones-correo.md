@@ -22,7 +22,7 @@ En el alta, los avisos se insertan antes del COMMIT de la queja. En un cambio de
 
 El trigger **no hace HTTP** ni envía correo. Un proceso NestJS separado revisa la cola cada cinco segundos, reserva un aviso, libera la transacción y llama al proveedor. No necesita modificar el CRM PHP ni abrir un endpoint público de envío. Graph devuelve 202 cuando acepta el mensaje; esto no demuestra la entrega al buzón. [Referencia de sendMail](https://learn.microsoft.com/en-us/graph/api/user-sendmail?view=graph-rest-1.0).
 
-Los correos incluyen código de incidencia, confirmación de alta o estado anterior/actual, y un enlace general de consulta si se configura. No incluyen nombre, DNI, dirección ni texto de reclamación. Se realizan envíos individuales: el solicitante y el destinatario interno no aparecen juntos en Para/CC. El usuario recibe el diseño de `backend/src/notificaciones/plantillas/usuario.html`, editable según [plantilla-correo-usuario.md](plantilla-correo-usuario.md); el aviso interno conserva texto plano. SMTP incluye también una alternativa de texto para el usuario.
+Los correos incluyen código de incidencia, confirmación de alta o estado anterior/actual, y un enlace general de consulta si se configura. No incluyen nombre, DNI, dirección ni texto de reclamación. Se realizan envíos individuales: el solicitante y el destinatario interno no aparecen juntos en Para/CC. El usuario y el destinatario interno reciben el diseño de `backend/src/notificaciones/plantillas/usuario.html`, editable según [plantilla-correo-usuario.md](plantilla-correo-usuario.md). SMTP incluye también una alternativa de texto para ambos destinatarios.
 
 ## Configuración temporal y cambio de direcciones
 

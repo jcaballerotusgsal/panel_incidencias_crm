@@ -4,9 +4,11 @@ Edita este archivo para cambiar el diseño de los avisos de alta y cambio de est
 
 **[backend/src/notificaciones/plantillas/usuario.html](../backend/src/notificaciones/plantillas/usuario.html)**
 
-Es un único HTML compartido por los dos eventos. Incluye secciones diferenciadas para que puedas cambiar los textos y la distribución de cada uno sin modificar TypeScript. El diseño inicial usa amarillo `#f5a810`, gris `#64666b`, tablas y estilos inline. Puedes cambiar colores, espaciados, tamaños, textos y estructura en ese archivo.
+Es un único HTML compartido por los dos eventos y por los destinatarios solicitante e interno. Incluye secciones diferenciadas para que puedas cambiar los textos y la distribución de cada uno sin modificar TypeScript. El diseño inicial usa amarillo `#f5a810`, gris `#64666b`, tablas y estilos inline. Puedes cambiar colores, espaciados, tamaños, textos y estructura en ese archivo.
 
 ## Ejemplo de edición
+
+En cambios de estado, el valor anterior se presenta en rojo `#b42318` con peso normal y el nuevo en verde `#15803d` con negrita. El alta conserva su estado en el color habitual. Ambos destinatarios usan estos mismos estilos. Las nuevas altas guardan `crm_respuesta.estado` como `Pendiente`; los estados históricos no se reescriben ni se cambia su texto al renderizar el correo.
 
 Para cambiar el título del correo de alta, busca `Hemos recibido tu queja` en el bloque `quejaCreada` y escribe tu texto. Para cambiar el de estado, edita el título del bloque `cambioEstado`. También puedes mover o eliminar campos; no es obligatorio utilizar todas las variables.
 
@@ -58,7 +60,7 @@ Los marcadores se escriben dentro de comentarios HTML y deben conservar apertura
 <!-- {{/enlaceConsulta}} -->
 ```
 
-`quejaCreada` se muestra al registrar una queja web; `cambioEstado`, cuando el trigger detecta el cambio de un expediente; `enlaceConsulta`, cuando hay URL configurada. El archivo inicial usa ese último bloque para evitar un botón vacío si no existe URL. Se admiten bloques anidados. Si eliminas un bloque, quita también su marcador de cierre.
+`quejaCreada` se muestra al registrar una queja web; `cambioEstado`, cuando el trigger detecta un cambio de `crm_respuesta.estado`; `enlaceConsulta`, cuando hay URL configurada. El archivo inicial usa ese último bloque para evitar un botón vacío si no existe URL. Se admiten bloques anidados. Si eliminas un bloque, quita también su marcador de cierre.
 
 ## Cuándo se aplican los cambios
 
@@ -66,7 +68,7 @@ En **desarrollo con Docker**:
 
 1. Edita `backend/src/notificaciones/plantillas/usuario.html` y guarda.
 2. El consumidor, con `NODE_ENV=development`, lee ese archivo original a través del montaje existente de `backend/`.
-3. En el siguiente envío al usuario ya se utiliza su contenido nuevo. Una vez instalada esta versión, editar solo el HTML no requiere recompilar ni reiniciar el worker, ni depende de las notificaciones de cambios de Docker Desktop.
+3. En el siguiente envío al usuario o al destinatario interno ya se utiliza su contenido nuevo. Una vez instalada esta versión, editar solo el HTML no requiere recompilar ni reiniciar el worker, ni depende de las notificaciones de cambios de Docker Desktop.
 
 No edites `dist/` manualmente: se sobrescribe al compilar. Si ejecutas el consumidor fuera de Docker sin `NODE_ENV=development`, utiliza la copia de la compilación y recompila después de editar la plantilla. Un cambio en TypeScript sí requiere compilar y reiniciar el consumidor.
 
@@ -76,7 +78,7 @@ La plantilla se elige al procesar cada aviso, incluidos los que estaban pendient
 
 ## Envío y errores
 
-Microsoft Graph recibe el cuerpo como HTML para el usuario, según el [contrato de itemBody](https://learn.microsoft.com/en-us/graph/api/resources/itembody?view=graph-rest-1.0). Con SMTP se incluyen HTML y una alternativa de texto plano mediante los [campos html/text de Nodemailer](https://nodemailer.com/message). El aviso interno conserva su cuerpo de texto. El asunto se mantiene en `CorreoService`; este archivo personaliza el cuerpo y no cambia los destinatarios.
+Microsoft Graph recibe el cuerpo como HTML para el usuario, según el [contrato de itemBody](https://learn.microsoft.com/en-us/graph/api/resources/itembody?view=graph-rest-1.0). Con SMTP se incluyen HTML y una alternativa de texto plano mediante los [campos html/text de Nodemailer](https://nodemailer.com/message). El aviso interno usa la misma plantilla HTML y también conserva la alternativa de texto en SMTP. El asunto se mantiene en `CorreoService`; este archivo personaliza el cuerpo y no cambia los destinatarios.
 
 Si falta el archivo, está vacío, contiene una variable desconocida o un bloque mal cerrado, no se llama al proveedor para ese aviso. El worker registra el código seguro `PLANTILLA_CORREO_INVALIDA` y lo reintenta según la política de correo existente. Corrige la plantilla antes de agotar los intentos. No se registran su contenido ni datos personales en el error.
 
