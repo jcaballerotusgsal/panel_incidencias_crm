@@ -1,5 +1,7 @@
 # Diccionario de crm_incidencia
 
+Ampliación del **19 de noviembre de 2026**: el JSON incorpora `respuestas: string[]` (31 propiedades en total), con textos de `crm_respuesta.respuesta` no vacíos después de recortar extremos. Las referencias posteriores a 30 propiedades corresponden al contrato anterior. No se devuelve `crm_respuesta.observaciones`.
+
 Metadatos locales verificados el **23 de octubre de 2026**. `id` es clave primaria `int(11)`; solo `id`, `fecha_recepcion` y `via_recepcion` son no nulos. Las demás columnas permiten `NULL`.
 
 | Columnas | Tipo MySQL |

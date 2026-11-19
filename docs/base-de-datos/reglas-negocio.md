@@ -1,5 +1,9 @@
 # Reglas de la consulta provisional
 
+## Respuestas visibles — 19 de noviembre de 2026
+
+La nueva petición autoriza leer y mostrar `crm_respuesta.respuesta` por `id_incidencia`, solo tras validar la pareja de consulta. La existencia de una fila inicial vacía no cuenta como respuesta. Se muestran todos los textos no vacíos, ordenados por `id_respuesta ASC`, sin inferir un estado final ni elegir una respuesta vigente. No se publican `observaciones`. El texto se recorta en los extremos y conserva saltos de línea, sin interpretar HTML. El apartado aparece debajo del detalle, con borde y fondo verdes, únicamente si la lista tiene contenido. No se modifica el criterio de estado mostrado desde expedientes. La API añade `respuestas` (31 propiedades); las cifras y campos anteriores describen el contrato previo.
+
 Confirmadas por la petición del usuario el **23 de octubre de 2026**:
 
 1. El código de incidencia corresponde a `crm_incidencia.id`.

@@ -1,5 +1,15 @@
 # Validación de la entrega
 
+## Respuesta bajo el detalle — 19 de noviembre de 2026
+
+Tras la comprobación inicial, el usuario detectó fallos de consulta local. Los logs del backend mostraban `EADDRINUSE` en 3001 tras recompilar con el watcher activo, situación prevista en `docker.md`: el proceso nuevo no llegaba a sustituir al anterior. Se reinició únicamente `backend` (el consumidor de correo estaba detenido); la salud a través de Next.js volvió a HTTP 200 con uptime reiniciado. Esta comprobación no consultó registros ni creó logs de incidencias. Se recomienda repetir la consulta en el navegador tras el reinicio para verificar la pareja real usada por el usuario.
+
+Rama `feat/respuesta-incidencia-detalle` desde `develop`. El repositorio lee solo `crm_respuesta.respuesta` por incidencia después de validar credenciales y añade `respuestas: string[]`, sin textos vacíos ni datos de observaciones. La interfaz muestra una sección verde bajo el detalle únicamente con respuestas. Se conserva texto y saltos de línea sin interpretar HTML; varias respuestas no multiplican la incidencia.
+
+Comprobaciones ejecutadas: tipos y compilación backend; 52 pruebas sintéticas de incidencias correctas, incluidas respuestas vacías/múltiples, SQL parametrizado, ausencia de lectura sin acceso y fallo 503 sin resultado parcial. Tipos frontend y lint correctos, salvo el aviso previo de exportación anónima en `postcss.config.mjs`. Edge con API interceptada verificó sección ausente/presente, posición, varias respuestas, escape HTML, móvil sin desbordamiento y rechazo de contratos inválidos (lista ausente, escalar, null, número o texto vacío). Captura provisional en `.local/browser/respuesta-incidencia.png`.
+
+No se accedió a registros reales del CRM ni se ejecutó el smoke que genera logs en la base configurada. No se alteraron tablas ni permisos; el usuario SQL del backend requiere SELECT en `crm_respuesta.respuesta` e identificadores usados para filtrar/ordenar. Pendiente comprobar el esquema y el acceso en el servidor. El contrato exige desplegar frontend y backend juntos; no requiere SQL de migración ni cambios en el consumidor de correo.
+
 ## HTML interno y presentación de estados — 17 de noviembre de 2026
 
 En `feat/correo-cambio-estado-crm`, solicitante e interno utilizan el mismo archivo `usuario.html`. Graph recibe HTML en ambos casos; SMTP conserva HTML y texto alternativo. Una plantilla inválida produce un fallo reintentable para ambos destinatarios. El estado anterior se presenta rojo y normal, y el nuevo verde y en negrita en cambios de estado. El alta inserta `crm_respuesta.estado = 'Pendiente'`, sin reescribir filas anteriores.

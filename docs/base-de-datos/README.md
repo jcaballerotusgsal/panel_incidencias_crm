@@ -2,6 +2,8 @@
 
 ## Procedencia y alcance
 
+El **19 de noviembre de 2026**, la consulta se amplía por petición del usuario para mostrar `crm_respuesta.respuesta` debajo del detalle. Se usa la relación ya documentada por `id_incidencia`; solo se lee el texto después de validar el acceso y se conservan las respuestas no vacías, ordenadas por id. No se inspeccionan datos reales ni se modifican objetos. Véanse [relaciones.md](relaciones.md#lectura-de-respuestas--19-de-noviembre-de-2026) y [reglas-negocio.md](reglas-negocio.md#respuestas-visibles--19-de-noviembre-de-2026).
+
 Verificación de **23 de octubre de 2026** contra los metadatos del servicio local `db`, MySQL **5.7.21**, mediante `information_schema.COLUMNS` y `KEY_COLUMN_USAGE`. También se revisó exclusivamente el DDL de `asd.sql`; no se ejecutó ese archivo.
 
 La tabla existente es **`crm_incidencia`**, en singular. No existe `crm_incidencias` en la copia consultada. Se comprobaron sus 28 columnas, nulabilidad, intercalaciones y relaciones declaradas. Esto no certifica el esquema ni los permisos de otros despliegues.

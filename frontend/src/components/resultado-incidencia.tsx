@@ -84,7 +84,7 @@ function mostrarValor(valor: Incidencia[string] | undefined, fecha = false): str
 }
 
 /**
- * Presenta una ficha con los campos visibles acordados y los estados sin resultado.
+ * Presenta la ficha y, si existen, respuestas del CRM como texto en un recuadro verde bajo el detalle.
  * @returns Vista adaptable, con valores como texto; al recargar requiere consultar de nuevo.
  */
 export function ResultadoIncidencia() {
@@ -131,6 +131,17 @@ export function ResultadoIncidencia() {
               {mostrarValor(resultado.incidencia.m_detalle)}
             </p>
           </section>
+
+          {resultado.incidencia.respuestas.length > 0 && (
+            <section aria-labelledby="respuesta-titulo" className="rounded-2xl border border-line bg-white p-6 shadow-sm sm:p-8">
+              <h3 id="respuesta-titulo" className="text-lg font-semibold text-brand-ink">Respuesta a la incidencia</h3>
+              <div className="mt-4 space-y-4 rounded-xl border border-green-600/30 bg-green-50 p-5 text-sm leading-7 text-brand-ink">
+                {resultado.incidencia.respuestas.map((respuesta, indice) => (
+                  <p key={indice} className="whitespace-pre-wrap break-words">{respuesta}</p>
+                ))}
+              </div>
+            </section>
+          )}
 
           <div className="grid gap-6 md:grid-cols-2">
             {grupos.map((grupo) => (
