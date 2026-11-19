@@ -1,5 +1,9 @@
 # Relaciones verificadas
 
+## Lectura de respuestas — 19 de noviembre de 2026
+
+Se utiliza la FK ya documentada `crm_respuesta.id_incidencia → crm_incidencia.id`, con índice no único. Tras encontrar la incidencia autorizada, se leen sus textos de respuesta ordenados por `id_respuesta`, sin unirlos a expedientes. Se admite cero, una o varias respuestas y se omiten textos ausentes/vacíos tras recorte. La granularidad de `respuestas` es una cadena por respuesta con contenido; la incidencia continúa siendo una sola fila. No hay modificaciones de datos, claves ni esquema. La revisión parte del DDL y metadatos locales previos; no se han inspeccionado respuestas reales ni se certifica el esquema del servidor.
+
 Claves foráneas declaradas en el MySQL local, consultadas el **23 de octubre de 2026**:
 
 | Origen | Destino |

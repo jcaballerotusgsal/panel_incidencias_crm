@@ -1,8 +1,9 @@
-/** Columnas escalares del CRM y lista explícita de estados de los expedientes relacionados. */
+/** Columnas escalares del CRM y listas explícitas de estados y respuestas relacionadas. */
 export type Incidencia = {
   id: number;
   nom_linea_tusgsal: string | null;
   estados_expedientes: (string | null)[];
+  respuestas: string[];
 } & Record<string, string | number | null | (string | null)[]>;
 
 export type ResultadoConsulta =
@@ -12,7 +13,7 @@ export type ResultadoConsulta =
 /**
  * Verifica el JSON externo antes de guardarlo o mostrar sus columnas.
  * @param value Respuesta de la API todavía sin validar.
- * @returns Si contiene id positivo, línea, estados como texto o null y el resto de columnas escalares.
+ * @returns Si contiene id positivo, línea, estados, respuestas de texto no vacío y columnas escalares.
  */
 export function isConsultaResponse(value: unknown): value is { incidencia: Incidencia } {
   if (typeof value !== 'object' || value === null || !('incidencia' in value)) return false;
@@ -27,8 +28,12 @@ export function isConsultaResponse(value: unknown): value is { incidencia: Incid
     && 'estados_expedientes' in incidencia
     && Array.isArray(incidencia.estados_expedientes)
     && incidencia.estados_expedientes.every((estado: unknown) => estado === null || typeof estado === 'string')
-    // Solo esta propiedad admite listas; otros campos nuevos deben seguir siendo escalares.
+    && 'respuestas' in incidencia
+    && Array.isArray(incidencia.respuestas)
+    && incidencia.respuestas.every((respuesta: unknown) => typeof respuesta === 'string' && respuesta.trim().length > 0)
+    // Solo las propiedades declaradas admiten listas; las demás siguen siendo escalares.
     && Object.entries(incidencia).every(([clave, campo]: [string, unknown]) => clave === 'estados_expedientes'
+      || clave === 'respuestas'
       || campo === null
       || typeof campo === 'string'
       || (typeof campo === 'number' && Number.isFinite(campo)));
