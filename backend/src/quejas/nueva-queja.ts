@@ -2,7 +2,7 @@
 export interface NuevaQueja {
   nombre: string;
   apellidos: string;
-  dni?: string | null;
+  dni: string;
   telefono?: string | null;
   correo: string;
   direccionPostal: string | null;

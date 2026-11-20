@@ -74,6 +74,8 @@ La inserción es parametrizada y debe confirmarse antes de devolver 200 o 404. S
 
 ## POST /api/quejas
 
+Revisión del **19 de noviembre de 2026**: siete obligatorios (`nombre`, `apellidos`, `correo`, `dni`, `fecha`, `hora`, `linea`). El documento admite DNI/NIE español con letra de control, recortado y guardado en mayúsculas. CP opcional de cinco cifras con provincia 01–52; teléfono nacional 6–9 y nueve cifras o internacional + y 8–15 cifras con separadores habituales. Nombre/apellidos con letras Unicode y puntuación habitual, sin números; dirección con letras/números, sin controles ni HTML, hasta 1000 caracteres. Reglas completas en [formulario-queja.md](formulario-queja.md#validaciones-revisadas--19-de-noviembre-de-2026). Un fallo devuelve 400 antes de escribir. Los textos vacíos se permiten en los opcionales. Las referencias anteriores al DNI opcional quedan sustituidas por este contrato.
+
 Alta autorizada en la copia local del CRM el **30 de octubre de 2026**. Ejemplo sintético de cuerpo JSON:
 
 ```json
@@ -82,9 +84,9 @@ Alta autorizada en la copia local del CRM el **30 de octubre de 2026**. Ejemplo 
   "apellidos": "Apellidos de prueba",
   "direccion": "Calle de prueba, 12",
   "codigoPostal": "01234",
-  "telefono": "000000000",
+  "telefono": "600000000",
   "correo": "prueba@example.invalid",
-  "dni": "PRUEBA123",
+  "dni": "12345678Z",
   "fecha": "30-10-2026",
   "hora": "14:30",
   "linea": 7,
@@ -97,16 +99,16 @@ Alta autorizada en la copia local del CRM el **30 de octubre de 2026**. Ejemplo 
 }
 ```
 
-`nombre`, `apellidos`, `correo`, `fecha`, `hora` y `linea` son obligatorios. Los demás campos de texto pueden faltar, ser null o ser cadenas vacías. Se recortan los extremos de cadenas sin convertir tipos ni truncar valores. El DTO rechaza propiedades ajenas, incluidos ids generados, canal, idioma, estados y fechas de registro impuestos por el cliente.
+`nombre`, `apellidos`, `correo`, `dni`, `fecha`, `hora` y `linea` son obligatorios. Los demás campos de texto pueden faltar, ser null o ser cadenas vacías. Se recortan los extremos de cadenas sin convertir tipos ni truncar valores. El DTO rechaza propiedades ajenas, incluidos ids generados, canal, idioma, estados y fechas de registro impuestos por el cliente.
 
 La v2 añade `zona` como número entero opcional: se envía `id_m_zona`, no el nombre de población. Solo este nuevo campo opcional se omite o se envía como null para no especificar zona; no acepta la cadena vacía ni ids en texto. Los clientes de la v1 que no lo envían siguen guardando zona NULL.
 
 | Campos | Límite o validación |
 | --- | --- |
 | `nombre`, `apellidos`, `telefono`, `correo`, `numeroVehiculo` | Hasta 45 caracteres; nombre y apellidos no vacíos, correo con formato de email |
-| `dni` | Hasta 10 caracteres; sin deducir ni modificar su formato |
+| `dni` | Obligatorio; DNI/NIE español de 9 caracteres con letra de control. Se guarda en mayúsculas |
 | `direccion`, `lugar` | Hasta 1000 caracteres |
-| `codigoPostal` | Texto de hasta 20 caracteres, conserva ceros iniciales |
+| `codigoPostal` | Opcional; cinco cifras de España con provincia 01–52, conserva ceros iniciales |
 | `parada`, `sentido` | Hasta 80 caracteres |
 | `motivo` | Hasta 20000 caracteres; sigue siendo opcional |
 | `fecha` | Fecha real `dd-mm-aaaa`, años 1000–9999; no se impone una regla de pasado/futuro |

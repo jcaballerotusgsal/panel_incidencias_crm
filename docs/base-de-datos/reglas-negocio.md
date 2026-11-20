@@ -21,6 +21,8 @@ La comparación de código e identificador es el criterio de acceso provisional 
 
 ## Alta de quejas autorizada el 30 de octubre de 2026
 
+La revisión del **19 de noviembre de 2026** limita el documento del formulario a DNI/NIE español con letra de control y lo guarda en mayúsculas. Sigue siendo obligatorio según la modificación previa del usuario. CP opcional de cinco cifras de España (01–52); dirección y teléfono opcionales con comprobación de sintaxis. No cambia la correspondencia de columnas ni la transacción y no reescribe datos históricos. Reglas en [formulario-queja.md](../formulario-queja.md#validaciones-revisadas--19-de-noviembre-de-2026).
+
 La aclaración del **17 de noviembre de 2026** cambia únicamente la capitalización del estado inicial de respuesta a `Pendiente`. `estado2` conserva `abierta` y el expediente conserva `Pendiente`. Se aplica a nuevas altas; no se ejecutan actualizaciones sobre respuestas históricas. Las referencias a `pendiente` en la petición original describen el valor anterior.
 
 La nueva petición amplía las escrituras autorizadas: incidencia, respuesta y expediente, en ese orden y de forma transaccional. Canal `formulario web`, tipo `Queja`, idioma vacío, estados de respuesta `pendiente`/`abierta` y de expediente `Pendiente`; ids y fechas de registro pertenecen al servidor. No se cambian registros anteriores ni se impone ese vocabulario a sus estados.

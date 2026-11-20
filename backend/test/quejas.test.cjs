@@ -10,7 +10,7 @@ const { QuejasRepository } = require('../dist/quejas/quejas.repository');
 
 const body = {
   nombre: 'Nombre sintético', apellidos: 'Apellidos de prueba', correo: 'prueba@example.invalid',
-  direccion: 'Calle de prueba, 12', codigoPostal: '01234', telefono: '000000000', dni: 'PRUEBA123',
+  direccion: 'Calle de prueba, 12', codigoPostal: '01234', telefono: '600000000', dni: '12345678Z',
   fecha: '30-10-2026', hora: '14:30', linea: 7, numeroVehiculo: '0012',
   lugar: 'Lugar sintético', parada: 'Parada sintética', sentido: 'Dirección de prueba', motivo: 'Motivo sintético\nSegunda línea.',
 };
@@ -59,11 +59,11 @@ async function crear(payload) {
 }
 
 /** Los campos opcionales admiten texto o null; Swagger no debe describirlos como objetos. */
-test('Swagger documenta los seis obligatorios y los opcionales como cadenas', () => {
+test('Swagger documenta los siete obligatorios y los opcionales como cadenas', () => {
   const document = SwaggerModule.createDocument(app, new DocumentBuilder().setTitle('Prueba').build());
   const schema = document.components.schemas.CrearQuejaDto;
-  assert.deepEqual(new Set(schema.required), new Set(['nombre', 'apellidos', 'correo', 'fecha', 'hora', 'linea']));
-  for (const key of ['direccion', 'codigoPostal', 'telefono', 'dni', 'numeroVehiculo', 'lugar', 'parada', 'sentido', 'motivo']) {
+  assert.deepEqual(new Set(schema.required), new Set(['nombre', 'apellidos', 'correo', 'dni', 'fecha', 'hora', 'linea']));
+  for (const key of ['direccion', 'codigoPostal', 'telefono', 'numeroVehiculo', 'lugar', 'parada', 'sentido', 'motivo']) {
     assert.equal(schema.properties[key].type, 'string');
     assert.equal(schema.properties[key].nullable, true);
   }
@@ -87,8 +87,8 @@ test('POST /api/quejas confirma 201 con código y prepara los campos autorizados
   assert.match(attempts[0].momento, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 });
 
-/** La obligatoriedad sigue siendo exactamente la de los seis campos marcados en el formulario. */
-for (const key of ['nombre', 'apellidos', 'correo', 'fecha', 'hora', 'linea']) {
+/** La obligatoriedad sigue siendo exactamente la de los siete campos marcados en el formulario. */
+for (const key of ['nombre', 'apellidos', 'correo', 'dni', 'fecha', 'hora', 'linea']) {
   test(`Rechaza la ausencia de ${key} antes de escribir`, async () => {
     const payload = { ...body };
     delete payload[key];
@@ -116,6 +116,36 @@ for (const [key, value] of [
 }
 
 /** No permite que el navegador fije ids, estados, canal o fechas del registro. */
+/** Comprueba formatos y letra de control antes de que el repositorio pueda escribir. */
+for (const [campo, valor] of [
+  ['dni', null], ['dni', ''], ['dni', '   '], ['dni', 12345678], ['dni', '12345678A'],
+  ['dni', 'X1234567A'], ['dni', 'A1234567Z'], ['dni', '12345678-Z'],
+  ['codigoPostal', '00000'], ['codigoPostal', '53000'], ['codigoPostal', '8911'], ['codigoPostal', '08A11'],
+  ['telefono', '000000000'], ['telefono', '123'], ['telefono', '600ABC000'], ['telefono', '++34600000000'],
+  ['nombre', '123'], ['apellidos', '<b>Apellido</b>'], ['nombre', 'Nombre\nOtro'],
+  ['direccion', '---'], ['direccion', '<b>Calle</b>'], ['direccion', 'Calle\u0000 1'],
+]) {
+  test(`Rechaza ${campo} con formato inválido: ${JSON.stringify(valor)}`, async () => {
+    assert.equal((await crear({ ...body, [campo]: valor })).status, 400);
+    assert.deepEqual(attempts, []);
+  });
+}
+
+/** Admite los formatos españoles con control y normaliza letras sin perder ceros ni separadores telefónicos. */
+for (const dni of ['12345678Z', '12345678z', 'X1234567L', 'Y1234567X', 'Z1234567R', '00000001R']) {
+  test(`Admite documento con control válido: ${dni}`, async () => {
+    assert.equal((await crear({ ...body, dni: ` ${dni} ` })).status, 201);
+    assert.equal(attempts[0].data.dni, dni.toUpperCase());
+  });
+}
+
+/** Campos opcionales ausentes y nombres con acentos, apóstrofos y guiones siguen siendo válidos. */
+test('Admite nombres internacionales y teléfono con prefijo sin exigir dirección o CP', async () => {
+  assert.equal((await crear({ ...body, nombre: 'María-José', apellidos: "O’Neill D'Angelo",
+    telefono: '+33 (1) 23 45 67 89', direccion: null, codigoPostal: null })).status, 201);
+});
+
+/** No permite que el navegador fije ids, estados, canal o fechas del registro. */
 for (const [key, value] of [['id', 123], ['estado', 'cerrada'], ['via_recepcion', 'otro canal'], ['fecha_recepcion', '2000-01-01'], ['dp_idioma', 'ca'], ['id_resolucion', 999], ['m_zona', 9]]) {
   test(`Rechaza el campo de servidor ${key} añadido al cuerpo`, async () => {
     assert.equal((await crear({ ...body, [key]: value })).status, 400);
@@ -124,8 +154,8 @@ for (const [key, value] of [['id', 123], ['estado', 'cerrada'], ['via_recepcion'
 }
 
 /** Los opcionales pueden faltar o ser nulos; el motivo sigue sin ser obligatorio. */
-test('Admite solo los seis obligatorios y conserva una dirección y motivo ausentes como null', async () => {
-  const response = await crear({ nombre: body.nombre, apellidos: body.apellidos, correo: body.correo, fecha: body.fecha, hora: body.hora, linea: body.linea });
+test('Admite solo los siete obligatorios y conserva una dirección y motivo ausentes como null', async () => {
+  const response = await crear({ nombre: body.nombre, apellidos: body.apellidos, correo: body.correo, dni: body.dni, fecha: body.fecha, hora: body.hora, linea: body.linea });
   assert.equal(response.status, 201);
   assert.equal(attempts[0].data.direccionPostal, null);
   assert.equal(attempts[0].data.detalle, null);
@@ -134,10 +164,10 @@ test('Admite solo los seis obligatorios y conserva una dirección y motivo ausen
 /** La dirección conserva el CP como texto y no introduce etiquetas vacías. */
 for (const [direccion, codigoPostal, expected] of [[null, '01234', 'Cp: 01234'], ['Solo dirección', null, 'Solo dirección'], ['', '', null]]) {
   test(`Prepara dirección y CP opcionales: ${JSON.stringify(expected)}`, async () => {
-    assert.equal((await crear({ ...body, direccion, codigoPostal, lugar: null, motivo: null, dni: null })).status, 201);
+    assert.equal((await crear({ ...body, direccion, codigoPostal, lugar: null, motivo: null, dni: body.dni })).status, 201);
     assert.equal(attempts[0].data.direccionPostal, expected);
     assert.equal(attempts[0].data.detalle, null);
-    assert.equal(attempts[0].data.dni, null);
+    assert.equal(attempts[0].data.dni, body.dni);
   });
 }
 

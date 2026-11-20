@@ -10,7 +10,7 @@ La ruta `/quejas/nueva`, accesible desde «Crear una queja» en la cabecera, pre
 | Código postal | No | Texto, conserva ceros iniciales |
 | Teléfono | No | Entrada de teléfono |
 | Correo electrónico | Sí | Entrada de correo |
-| DNI | No | Texto |
+| DNI / NIE | Sí | Documento español con letra de control |
 | Fecha | Sí | Selector de calendario nativo |
 | Hora | Sí | Entrada de hora `hh:mm` |
 | Línea | Sí | Desplegable del catálogo del CRM |
@@ -21,7 +21,25 @@ La ruta `/quejas/nueva`, accesible desde «Crear una queja» en la cabecera, pre
 | Sentido | No | Texto |
 | Motivo de reclamación | No | Área de texto |
 
-Los 16 campos conservan los seis obligatorios. Los asteriscos y el atributo HTML `required` los identifican. Además de las comprobaciones nativas del navegador, el backend valida tipos, longitudes, correo, fecha real de calendario, hora y existencia de línea y población seleccionadas. El calendario utiliza `type="date"`, con años 1000–9999; su presentación depende del navegador y el idioma. El valor HTML `aaaa-mm-dd` se convierte a `dd-mm-aaaa` al enviar, sin usar objetos Date ni cambiar de día por zona horaria. Los límites y el JSON se describen en [api.md](api.md).
+Los 16 campos conservan los siete obligatorios. Los asteriscos y el atributo HTML `required` los identifican. Además de las comprobaciones nativas del navegador, el backend valida tipos, longitudes, correo, fecha real de calendario, hora y existencia de línea y población seleccionadas. El calendario utiliza `type="date"`, con años 1000–9999; su presentación depende del navegador y el idioma. El valor HTML `aaaa-mm-dd` se convierte a `dd-mm-aaaa` al enviar, sin usar objetos Date ni cambiar de día por zona horaria. Los límites y el JSON se describen en [api.md](api.md).
+
+## Validaciones revisadas — 19 de noviembre de 2026
+
+Alcance confirmado: DNI/NIE españoles y CP de España. Se comprueban en navegador y API; los opcionales mantienen su carácter opcional. El navegador muestra errores al editar o salir del campo y los revisa antes de enviar.
+
+| Campo | Regla |
+| --- | --- |
+| Nombre y apellidos | Obligatorios, hasta 45 caracteres; letras Unicode, acentos, espacios, punto, apóstrofos, guion y punto medio; sin números |
+| DNI / NIE | Obligatorio, nueve caracteres con letra de control: ocho cifras para DNI; X/Y/Z y siete cifras para NIE. Admite minúsculas, se guarda en mayúsculas; sin separadores |
+| Correo | Obligatorio, hasta 45 caracteres y sintaxis válida; no verifica que exista el buzón |
+| Dirección | Opcional, hasta 1000 caracteres, con letras o números y sin HTML ni caracteres de control/saltos de línea; no verifica el domicilio real ni exige número de puerta |
+| CP | Opcional, cinco cifras, provincia 01–52; conserva ceros y no comprueba su existencia en catálogo ni correspondencia con dirección/población |
+| Teléfono | Opcional, nacional de nueve cifras empezando por 6–9 o internacional con + y 8–15 cifras, primera no cero; admite espacios, paréntesis, puntos y guiones; no comprueba existencia |
+| Fecha y hora | Se conserva el calendario real y hora 00:00–23:59; no se añaden restricciones de antigüedad o fecha futura |
+| Línea y población | Se conservan tipos y comprobación de existencia en el CRM; población opcional |
+| Resto de campos | Mantienen límites y carácter opcional; texto sin interpretación HTML |
+
+La API admite ausencia, null o texto vacío en los opcionales; recorta extremos sin convertir tipos. Un 400 conserva el formulario y muestra los errores de validación. El control del DNI/NIE no acredita identidad. No se cambian registros históricos ni el esquema.
 
 ## Catálogo de líneas
 
