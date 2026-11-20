@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, type TransformFnParams } from 'class-transformer';
 import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateBy } from 'class-validator';
-import { isFechaSuceso } from './validaciones';
+import { isFechaSuceso, isDocumentoEspana, isCodigoPostal, isTelefono, isNombrePersona, isDireccion } from './validaciones';
 
 /**
  * Recorta extremos solo en cadenas, sin convertir objetos, números ni nulos a texto.
@@ -19,6 +19,7 @@ export class CrearQuejaDto {
   @Transform(recortarTexto)
   @IsString()
   @IsNotEmpty({ message: 'El nombre es obligatorio.' })
+  @ValidateBy({ name: 'nombrePersona', validator: { validate: isNombrePersona } }, { message: 'El nombre debe contener letras y puntuación habitual, sin números.' })
   @MaxLength(45)
   nombre!: string;
 
@@ -26,6 +27,7 @@ export class CrearQuejaDto {
   @Transform(recortarTexto)
   @IsString()
   @IsNotEmpty({ message: 'Los apellidos son obligatorios.' })
+  @ValidateBy({ name: 'apellidosPersona', validator: { validate: isNombrePersona } }, { message: 'Los apellidos deben contener letras y puntuación habitual, sin números.' })
   @MaxLength(45)
   apellidos!: string;
 
@@ -34,13 +36,15 @@ export class CrearQuejaDto {
   @Transform(recortarTexto)
   @IsString()
   @MaxLength(1000)
+  @ValidateBy({ name: 'direccionPostal', validator: { validate: isDireccion } }, { message: 'La dirección debe contener letras o números y no puede incluir etiquetas ni saltos de línea.' })
   direccion?: string | null;
 
-  @ApiPropertyOptional({ type: String, maxLength: 20, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 5, nullable: true, description: 'Código postal de España: cinco cifras, provincia 01–52.' })
   @IsOptional()
   @Transform(recortarTexto)
   @IsString()
-  @MaxLength(20)
+  @MaxLength(5)
+  @ValidateBy({ name: 'codigoPostalEspana', validator: { validate: isCodigoPostal } }, { message: 'El código postal debe tener cinco cifras y empezar por una provincia entre 01 y 52.' })
   codigoPostal?: string | null;
 
   @ApiPropertyOptional({ type: String, maxLength: 45, nullable: true })
@@ -48,6 +52,7 @@ export class CrearQuejaDto {
   @Transform(recortarTexto)
   @IsString()
   @MaxLength(45)
+  @ValidateBy({ name: 'telefonoContacto', validator: { validate: isTelefono } }, { message: 'Introduce un teléfono español de nueve cifras o un número internacional con + y entre 8 y 15 cifras.' })
   telefono?: string | null;
 
   @ApiProperty({ maxLength: 45, format: 'email' })
@@ -57,12 +62,13 @@ export class CrearQuejaDto {
   @MaxLength(45)
   correo!: string;
 
-  @ApiPropertyOptional({ type: String, maxLength: 10, nullable: true })
+  @ApiProperty({ type: String, maxLength: 9, description: 'DNI o NIE español con letra de control válida.' })
   @Transform(recortarTexto)
   @IsString()
   @IsNotEmpty({ message: 'El DNI es obligatorio.' })
-  @MaxLength(10)
-  dni?: string;
+  @MaxLength(9)
+  @ValidateBy({ name: 'documentoEspana', validator: { validate: isDocumentoEspana } }, { message: 'El DNI o NIE debe tener un formato y una letra de control válidos.' })
+  dni!: string;
 
   @ApiProperty({ example: '30-10-2026', description: 'Fecha real del suceso, en formato dd-mm-aaaa.' })
   @Transform(recortarTexto)

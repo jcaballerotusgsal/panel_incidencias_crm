@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { isLineasResponse, type Linea } from '@/lib/lineas';
 import { isQuejaCreada, type QuejaCreada } from '@/lib/quejas';
 import { isPoblacionesResponse, type Poblacion } from '@/lib/poblaciones';
+import { validarCampoQueja } from '@/lib/validaciones-queja';
 
 type Campo = {
   nombre: string;
@@ -33,19 +34,27 @@ const camposPersonales: readonly Campo[] = [
   { nombre: 'nombre', etiqueta: 'Nombre', autoComplete: 'given-name', obligatorio: true, maxLength: 45 },
   { nombre: 'apellidos', etiqueta: 'Apellidos', autoComplete: 'family-name', obligatorio: true, maxLength: 45 },
   { nombre: 'direccion', etiqueta: 'Dirección', autoComplete: 'street-address', anchoCompleto: true, placeholder: 'Calle, número y piso', maxLength: 1000 },
-  { nombre: 'codigoPostal', etiqueta: 'Código postal', autoComplete: 'postal-code', placeholder: 'Ej. 08911', maxLength: 20 },
+  { nombre: 'codigoPostal', etiqueta: 'Código postal', autoComplete: 'postal-code', placeholder: 'Ej. 08911', maxLength: 5 },
   { nombre: 'telefono', etiqueta: 'Teléfono', tipo: 'tel', autoComplete: 'tel', maxLength: 45 },
   { nombre: 'correo', etiqueta: 'Correo electrónico', tipo: 'email', autoComplete: 'email', obligatorio: true, placeholder: 'nombre@ejemplo.com', maxLength: 45 },
-  { nombre: 'dni', etiqueta: 'DNI', autoComplete: 'off', obligatorio: true, maxLength: 10 },
+  { nombre: 'dni', etiqueta: 'DNI / NIE', autoComplete: 'off', obligatorio: true, maxLength: 9 },
 ];
 
 /**
- * Presenta un campo de la estructura del formulario con etiqueta y obligatoriedad nativa.
+ * Presenta un campo con etiqueta, obligatoriedad nativa y errores personales al editar o salir.
  * @param campo Configuración visual y límites de entrada acordes al contrato de la API.
  * @returns Entrada accesible del formulario, que se recoge al enviar.
  */
 function CampoFormulario({ campo }: { campo: Campo }) {
   const id = `queja-${campo.nombre}`;
+  const [errorCampo, setErrorCampo] = useState('');
+
+  /** Comprueba el texto y sincroniza el mensaje accesible con la validación nativa del control. */
+  function comprobar(entrada: HTMLInputElement): void {
+    const mensaje = validarCampoQueja(campo.nombre, entrada.value);
+    entrada.setCustomValidity(mensaje);
+    setErrorCampo(mensaje);
+  }
   return (
     <div className={campo.anchoCompleto ? 'min-w-0 sm:col-span-2' : 'min-w-0'}>
       <label htmlFor={id} className="block text-sm font-medium text-brand-ink">
@@ -59,8 +68,14 @@ function CampoFormulario({ campo }: { campo: Campo }) {
         required={campo.obligatorio}
         placeholder={campo.placeholder}
         maxLength={campo.maxLength}
+        inputMode={campo.nombre === 'codigoPostal' ? 'numeric' : undefined}
+        aria-invalid={errorCampo ? true : undefined}
+        aria-describedby={errorCampo ? `${id}-error` : undefined}
+        onBlur={(event) => comprobar(event.currentTarget)}
+        onChange={(event) => comprobar(event.currentTarget)}
         className={estiloCampo}
       />
+      {errorCampo && <p id={`${id}-error`} className="mt-2 text-xs text-rose-700">{errorCampo}</p>}
     </div>
   );
 }
@@ -142,7 +157,7 @@ export function FormularioQueja() {
   }, []);
 
   /**
-   * Convierte fecha del calendario e ids de opciones y envía JSON sin conservar datos personales al confirmar.
+   * Valida los controles, convierte fecha e ids y envía JSON sin conservar datos personales al confirmar.
    * @param event Envío nativo, cancelado para controlar la petición y la respuesta.
    * @returns Promesa que termina mostrando el código creado o un error, sin reenvíos automáticos.
    */
@@ -151,6 +166,13 @@ export function FormularioQueja() {
     if (bloqueoEnvio.current || creada !== null) return;
     setError(null);
     const form = event.currentTarget;
+    for (const campo of camposPersonales) {
+      const entrada = form.elements.namedItem(campo.nombre);
+      if (entrada instanceof HTMLInputElement) {
+        entrada.setCustomValidity(validarCampoQueja(campo.nombre, entrada.value));
+      }
+    }
+    if (!form.reportValidity()) return;
     const data = new FormData(form);
     const payload: Record<string, string | number | null> = {};
     for (const [nombre, valor] of data.entries()) {
@@ -188,7 +210,10 @@ export function FormularioQueja() {
         body: JSON.stringify(payload), cache: 'no-store', signal: AbortSignal.timeout(30000),
       });
       if (response.status === 400) {
-        setError('Revisa los campos, la fecha y las opciones seleccionadas.');
+        const detalle: unknown = await response.json().catch(() => null);
+        const mensajes = typeof detalle === 'object' && detalle !== null && 'message' in detalle ? detalle.message : null;
+        setError(Array.isArray(mensajes) && mensajes.every((mensaje: unknown) => typeof mensaje === 'string')
+          ? mensajes.join(' ') : 'Revisa los campos, la fecha y las opciones seleccionadas.');
         return;
       }
       if (response.status !== 201) throw new Error('No se ha confirmado el alta.');
@@ -234,7 +259,7 @@ export function FormularioQueja() {
       : poblaciones.length === 0 ? 'No hay poblaciones disponibles' : 'Sin especificar';
 
   return (
-    <form method="post" onSubmit={enviarQueja} aria-busy={enviando} className="space-y-8">
+    <form method="post" noValidate onSubmit={enviarQueja} aria-busy={enviando} className="space-y-8">
       <p className="text-sm text-brand-gray">Los campos marcados con un asterisco (*) son obligatorios.</p>
 
       <fieldset disabled={enviando} className="surface-card p-6 sm:p-8">

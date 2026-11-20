@@ -1,5 +1,11 @@
 # Validación de la entrega
 
+## Validación del formulario — 19 de noviembre de 2026
+
+La ficha con respuestas se guarda en `e5b1e9e` y se integra/publica en `develop` mediante `df582a7`. La nueva rama `feat/validaciones-formulario-quejas` incorpora las comprobaciones confirmadas por el usuario: DNI/NIE españoles con letra de control y CP de España. Se añaden comprobaciones de nombres, teléfono y dirección, sin cambiar los opcionales. Se normaliza a mayúsculas el documento al preparar el alta y se corrige Swagger y las pruebas que aún lo describían opcional.
+
+Tipos y compilación backend correctos; pasaron 123 pruebas de alta/repositorio y después la suite completa del backend (255 pruebas), con datos sintéticos y proveedores simulados. Tipos frontend correctos y lint sin errores, con el aviso previo de exportación anónima en `postcss.config.mjs`. Edge comprobó DNI/NIE, correo, nombres, CP, teléfono, dirección, corrección de mensajes accesibles, ausencia de POST con campos inválidos y envío válido interceptado en móvil. No se crearon quejas ni se enviaron correos reales. No se ejecutó el smoke que crea logs en el CRM configurado. Se reinicia backend tras compilar para evitar servir procesos antiguos con `EADDRINUSE`. No se modifica el esquema ni se revalidan registros históricos.
+
 ## Respuesta bajo el detalle — 19 de noviembre de 2026
 
 Tras la comprobación inicial, el usuario detectó fallos de consulta local. Los logs del backend mostraban `EADDRINUSE` en 3001 tras recompilar con el watcher activo, situación prevista en `docker.md`: el proceso nuevo no llegaba a sustituir al anterior. Se reinició únicamente `backend` (el consumidor de correo estaba detenido); la salud a través de Next.js volvió a HTTP 200 con uptime reiniciado. Esta comprobación no consultó registros ni creó logs de incidencias. Se recomienda repetir la consulta en el navegador tras el reinicio para verificar la pareja real usada por el usuario.
