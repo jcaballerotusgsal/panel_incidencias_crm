@@ -1,5 +1,7 @@
 # Formulario de nueva queja
 
+Desde el **20 de noviembre de 2026**, etiquetas, ayudas, errores y confirmación se presentan en catalán, español o inglés. El selector conserva los valores del formulario, incluidos errores y selecciones. Las reglas españolas de documento y CP permanecen iguales y el alta no añade un campo de idioma. Véase [multiidioma.md](multiidioma.md).
+
 La ruta `/quejas/nueva`, accesible desde «Crear una queja» en la cabecera, presenta la estructura solicitada el **29 de octubre de 2026**, conectada al alta por API el **30 de octubre de 2026**. La v1 funcional queda guardada en `0a8d018`; la v2 añade población, Lugar al principio del detalle y calendario. Se organiza en datos personales, datos del suceso y reclamación; utiliza dos columnas en escritorio y una en móvil.
 
 | Campo | Obligatorio | Presentación |

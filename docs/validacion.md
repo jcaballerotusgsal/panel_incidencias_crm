@@ -1,5 +1,19 @@
 # Validación de la entrega
 
+## Multiidioma de la web — 20 de noviembre de 2026
+
+Para preparar la integración en `main` se repiten las 13 pruebas de idioma, tipos y lint sobre los textos y selector finales. Se compila el frontend en un contenedor temporal Node 24.22.3 sin red. Esta entrega promueve también la ficha con respuestas y las validaciones ya verificadas en `develop`; el despliegue del servidor debe actualizar frontend y backend. No se requiere SQL adicional ni se aplica el despliegue remoto desde esta sesión.
+
+Por petición posterior, el desplegable se sustituye por botones con banderas SVG y nombres, con estado `aria-pressed` y resaltado amarillo. Se comprueba específicamente el selector por clic y teclado, conservación del código escrito, recuerdo tras recargar y ausencia de desbordamiento en móvil. El cambio es de presentación; conserva el contexto y cookie del multiidioma.
+
+Rama `feat/multiidioma-ca-es-en`, desde `develop` tras integrar las validaciones (`2a20091`). Se incorporan 134 claves en los diccionarios ca/es/en, selector de idioma, cookie de preferencia, detección por navegador y catalán como alternativa. El servidor entrega `lang`, título y descripción traducidos; el cliente actualiza idioma/título sin navegar ni remontar formularios/resultado. Se traducen navegación, consulta, alta, ficha, controles y errores conocidos, sin traducir texto libre del CRM. El enlace de alta en la portada se corrige a la ruta existente `/quejas/nueva`.
+
+Comprobaciones: `npm run test:i18n` pasa 13 pruebas de claves, preferencias regionales/pesos, cookie inválida, alternativa y estados desconocidos. Tipos correctos; lint sin errores salvo el aviso previo de exportación anónima en `postcss.config.mjs`. Se compiló Next.js 16.4.1 con Node 24 en un contenedor temporal sin red ni variables de conexión al CRM, manteniendo el frontend local activo; la salida usa renderizado por petición. No se añaden dependencias: el manifiesto solo incorpora el comando de pruebas y no cambia el lockfile.
+
+Edge con APIs de negocio interceptadas comprobó HTML inicial en inglés, cambio a catalán/español/inglés, cookie tras recarga, idioma alternativo para navegador francés, metadatos, conservación de campos/fecha/línea y resultado, corrección/traducción de errores de DNI, 400 genérico localizado, confirmación, 404, estados conocidos/desconocidos, texto original de detalle/respuesta y móvil sin desbordamiento ni errores de página. La captura provisional está en `.local/browser/multiidioma-ca.png`. Se adaptó el selector de alerta de la prueba para distinguirlo del anunciador accesible de rutas de Next.js.
+
+No se han enviado correos, creado quejas ni consultado datos reales. No se modifican backend, tablas, triggers, `dp_idioma` o contrato API. El smoke general solicita español explícito y corrige el texto del título actual, pero no se ejecuta contra el CRM configurado porque genera un log. Correos por idioma y persistencia de idioma en la queja quedan para una fase posterior. Guía de edición/despliegue en [multiidioma.md](multiidioma.md).
+
 ## Validación del formulario — 19 de noviembre de 2026
 
 La ficha con respuestas se guarda en `e5b1e9e` y se integra/publica en `develop` mediante `df582a7`. La nueva rama `feat/validaciones-formulario-quejas` incorpora las comprobaciones confirmadas por el usuario: DNI/NIE españoles con letra de control y CP de España. Se añaden comprobaciones de nombres, teléfono y dirección, sin cambiar los opcionales. Se normaliza a mayúsculas el documento al preparar el alta y se corrige Swagger y las pruebas que aún lo describían opcional.

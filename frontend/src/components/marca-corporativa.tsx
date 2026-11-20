@@ -1,5 +1,7 @@
 'use client';
 
+import { useIdioma } from './idioma-context';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,10 +13,11 @@ import { useState } from 'react';
  * @remarks Añadir public/brand/logo-direxis-tusgsal.png y recargar basta en desarrollo.
  */
 export function MarcaCorporativa() {
+  const { t } = useIdioma();
   const [logoDisponible, setLogoDisponible] = useState(false);
 
   return (
-    <Link href="/" aria-label="DIREXIS TUSGSAL. Inicio" className="relative block h-14 w-48 shrink-0 sm:w-56">
+    <Link href="/" aria-label={t("DIREXIS TUSGSAL. Inicio")} className="relative block h-14 w-48 shrink-0 sm:w-56">
       <span aria-hidden="true" className={`absolute inset-0 flex flex-col justify-center ${logoDisponible ? 'invisible' : ''}`}>
         <span className="text-2xl leading-none font-extrabold tracking-[0.13em] text-brand-ink">DIREXIS</span>
         <span className="mt-2 flex items-center gap-2 text-xs font-bold tracking-[0.24em] text-brand-gray">
@@ -41,6 +44,7 @@ export function MarcaCorporativa() {
  * @returns Navegación adaptable con aria-current y contraste corporativo.
  */
 export function NavegacionPrincipal() {
+  const { t } = useIdioma();
   const pathname = usePathname();
   const enlaces = [
     { href: '/', texto: 'Consultar incidencia', activo: pathname === '/' || pathname === '/incidencias/resultado' },
@@ -48,13 +52,13 @@ export function NavegacionPrincipal() {
   ];
 
   return (
-    <nav aria-label="Navegación principal" className="flex flex-wrap items-center gap-2 text-sm">
+    <nav aria-label={t("Navegación principal")} className="flex flex-wrap items-center gap-2 text-sm">
       {enlaces.map((enlace) => (
         <Link key={enlace.href} href={enlace.href} aria-current={enlace.activo ? 'page' : undefined}
           className={`rounded-lg px-3 py-2.5 font-semibold transition-colors sm:px-4 ${enlace.activo
             ? 'bg-brand-soft text-brand-ink shadow-[inset_0_-3px_0_var(--brand-yellow)]'
             : 'text-brand-gray hover:bg-canvas hover:text-brand-ink'}`}>
-          {enlace.texto}
+          {t(enlace.texto)}
         </Link>
       ))}
     </nav>
