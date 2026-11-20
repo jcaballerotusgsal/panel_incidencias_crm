@@ -17,6 +17,7 @@ const fixture = {
   dp_email: 'prueba@example.invalid', dp_correoPostal: null, m_tipo: null,
   m_fechaAcontecimiento_date: null, m_hora: null, m_linea: 777, nom_linea_tusgsal: 'N99', m_vehiculo: null,
   estados_expedientes: ['en revision'],
+  respuestas: [],
   m_zona: null, m_parada: null, m_sentido: null, m_detalle: '<script>prueba</script>',
   nombre_corto: null, incidencia_created_date: null, incidencia_date_updated: null,
   e_matricula: null, e_conductor: null, e_fecha: null, e_tempo: null,
@@ -27,6 +28,7 @@ const logs = [];
 let failLog = false;
 let incidenciaGuardada = fixture;
 let lecturasExpedientes = 0;
+let lecturasRespuestas = 0;
 const logRepository = {
   /** Captura una escritura sintética o simula su fallo sin acceder a MySQL. */
   async registrar(fechaHoraPeticion, codigoIncidencia, identificador, valida) {
@@ -38,6 +40,10 @@ const logRepository = {
 const repository = new IncidenciasRepository({
   /** Simula MySQL con filas sintéticas y los parámetros del repositorio real; nunca accede al CRM. */
   async read(sql, values) {
+    if (sql.includes('FROM crm_respuesta')) {
+      lecturasRespuestas += 1;
+      return incidenciaGuardada.respuestas.map(respuesta => ({ respuesta }));
+    }
     if (sql.includes('FROM crm_expediente')) {
       lecturasExpedientes += 1;
       return incidenciaGuardada.estados_expedientes.map(estado => ({ estado }));
@@ -82,7 +88,7 @@ after(async () => { if (app) await app.close(); });
 /** Aísla los registros y fallos simulados de cada petición de prueba. */
 beforeEach(() => {
   consultas.length = 0; logs.length = 0; failLog = false;
-  incidenciaGuardada = fixture; lecturasExpedientes = 0;
+  incidenciaGuardada = fixture; lecturasExpedientes = 0; lecturasRespuestas = 0;
 });
 
 /**
@@ -120,6 +126,7 @@ for (const apellido of ['Apellidos de prueba', 'AMB-PRUEBA', 'AQU-PRUEBA']) {
     assert.equal(response.status, 404);
     assert.equal((await response.json()).message, 'No se han encontrado los datos.');
     assert.equal(lecturasExpedientes, 0);
+    assert.equal(lecturasRespuestas, 0);
     assert.equal(logs.length, 1);
     assert.equal(logs[0].valida, false);
     assert.equal(logs[0].identificador, ` ${apellido} `);
@@ -279,17 +286,50 @@ for (const estados of [[], ['pendiente'], ['en revision', 'cerrada'], [null], ['
       /** Simula una fila autorizada y la lectura posterior de sus expedientes. */
       async read(sql, values) {
         calls.push({ sql, values });
-        return calls.length === 1 ? [fixture] : estados.map((estado) => ({ estado }));
+        return calls.length === 1 ? [fixture] : calls.length === 2 ? estados.map((estado) => ({ estado })) : [];
       },
     };
     const incidencia = await new IncidenciasRepository(database).findByCredentials(fixture.id, fixture.dp_dni);
     assert.deepEqual(incidencia, { ...fixture, estados_expedientes: estados });
-    assert.equal(calls.length, 2);
+    assert.equal(calls.length, 3);
     assert.match(calls[1].sql, /SELECT estado\s+FROM crm_expediente\s+WHERE id_incidencia = \?\s+ORDER BY id ASC/);
     assert.deepEqual(calls[1].values, [fixture.id]);
     assert.doesNotMatch(calls[1].sql, /LIMIT|SELECT\s+\*/i);
   });
 }
+
+/** Las respuestas se leen por incidencia autorizada, sin unir expedientes ni devolver notas internas. */
+test('Devuelve solo textos de respuesta no vacíos, conservando varias respuestas y saltos de línea', async () => {
+  const calls = [];
+  const database = {
+    /** Captura parámetros y simula respuestas opcionales sin contactar con MySQL. */
+    async read(sql, values) {
+      calls.push({ sql, values });
+      if (calls.length === 1) return [fixture];
+      if (calls.length === 2) return [];
+      return [null, '', ' \n\t ', ' Primera respuesta\nSegunda línea ', '<b>Otra respuesta</b>']
+        .map(respuesta => ({ respuesta }));
+    },
+  };
+  const incidencia = await new IncidenciasRepository(database).findByCredentials(fixture.id, fixture.dp_dni);
+  assert.deepEqual(incidencia.respuestas, ['Primera respuesta\nSegunda línea', '<b>Otra respuesta</b>']);
+  assert.deepEqual(calls[2].values, [fixture.id]);
+  assert.match(calls[2].sql, /SELECT respuesta\s+FROM crm_respuesta\s+WHERE id_incidencia = \? AND respuesta IS NOT NULL\s+ORDER BY id_respuesta ASC/);
+  assert.doesNotMatch(calls[2].sql, /JOIN|observaciones|SELECT\s+\*/i);
+});
+
+/** Una lectura fallida no puede presentarse como una incidencia sin respuesta. */
+test('El fallo de respuestas devuelve 503 y registra el intento sin resultado parcial', async () => {
+  const service = new IncidenciasService(new IncidenciasRepository({
+    /** Simula el fallo de respuestas después de autorizar y leer expedientes. */
+    async read(sql) {
+      if (sql.includes('FROM crm_respuesta')) throw new ServiceUnavailableException('Servicio no disponible');
+      return sql.includes('FROM crm_expediente') ? [] : [fixture];
+    },
+  }), logRepository);
+  await assert.rejects(service.consultar({ codigoIncidencia: fixture.id, identificador: fixture.dp_dni }), { status: 503 });
+  assert.equal(logs[0].valida, false);
+});
 
 /** La imposibilidad de leer expedientes no se disfraza de lista vacía ni entrega un resultado parcial. */
 test('Un fallo al leer expedientes propaga un error público de servicio', async () => {

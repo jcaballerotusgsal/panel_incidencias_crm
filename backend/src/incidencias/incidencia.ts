@@ -1,4 +1,4 @@
-/** Incidencia, nombre de línea y estados de sus expedientes; conserva fechas y nulos del CRM. */
+/** Incidencia, línea, estados de expedientes y textos de respuesta; conserva fechas y nulos del CRM. */
 export interface Incidencia {
   id: number;
   fecha_recepcion: string;
@@ -18,6 +18,7 @@ export interface Incidencia {
   m_linea: number | null;
   nom_linea_tusgsal: string | null;
   estados_expedientes: (string | null)[];
+  respuestas: string[];
   m_vehiculo: string | null;
   m_zona: number | null;
   m_parada: string | null;

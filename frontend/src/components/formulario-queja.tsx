@@ -1,10 +1,13 @@
 'use client';
 
+import { useIdioma } from './idioma-context';
+
 import Link from 'next/link';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { isLineasResponse, type Linea } from '@/lib/lineas';
 import { isQuejaCreada, type QuejaCreada } from '@/lib/quejas';
 import { isPoblacionesResponse, type Poblacion } from '@/lib/poblaciones';
+import { errorControlQueja, errorApiQueja } from '@/lib/validaciones-queja';
 
 type Campo = {
   nombre: string;
@@ -33,34 +36,55 @@ const camposPersonales: readonly Campo[] = [
   { nombre: 'nombre', etiqueta: 'Nombre', autoComplete: 'given-name', obligatorio: true, maxLength: 45 },
   { nombre: 'apellidos', etiqueta: 'Apellidos', autoComplete: 'family-name', obligatorio: true, maxLength: 45 },
   { nombre: 'direccion', etiqueta: 'Dirección', autoComplete: 'street-address', anchoCompleto: true, placeholder: 'Calle, número y piso', maxLength: 1000 },
-  { nombre: 'codigoPostal', etiqueta: 'Código postal', autoComplete: 'postal-code', placeholder: 'Ej. 08911', maxLength: 20 },
+  { nombre: 'codigoPostal', etiqueta: 'Código postal', autoComplete: 'postal-code', placeholder: 'Ej. 08911', maxLength: 5 },
   { nombre: 'telefono', etiqueta: 'Teléfono', tipo: 'tel', autoComplete: 'tel', maxLength: 45 },
   { nombre: 'correo', etiqueta: 'Correo electrónico', tipo: 'email', autoComplete: 'email', obligatorio: true, placeholder: 'nombre@ejemplo.com', maxLength: 45 },
-  { nombre: 'dni', etiqueta: 'DNI', autoComplete: 'off', obligatorio: true, maxLength: 10 },
+  { nombre: 'dni', etiqueta: 'DNI / NIE', autoComplete: 'off', obligatorio: true, maxLength: 9 },
 ];
 
 /**
- * Presenta un campo de la estructura del formulario con etiqueta y obligatoriedad nativa.
+ * Presenta un campo con etiqueta, obligatoriedad nativa y errores personales al editar o salir.
  * @param campo Configuración visual y límites de entrada acordes al contrato de la API.
  * @returns Entrada accesible del formulario, que se recoge al enviar.
  */
 function CampoFormulario({ campo }: { campo: Campo }) {
+  const { t } = useIdioma();
   const id = `queja-${campo.nombre}`;
+  const referencia = useRef<HTMLInputElement>(null);
+  const [errorCampo, setErrorCampo] = useState('');
+
+  useEffect(() => {
+    if (referencia.current && errorCampo) referencia.current.setCustomValidity(t(errorCampo));
+  }, [t, errorCampo]);
+
+  /** Comprueba el texto y sincroniza el mensaje accesible con la validación nativa del control. */
+  function comprobar(entrada: HTMLInputElement): void {
+    const mensaje = errorControlQueja(entrada);
+    entrada.setCustomValidity(mensaje ? t(mensaje) : '');
+    setErrorCampo(mensaje);
+  }
   return (
     <div className={campo.anchoCompleto ? 'min-w-0 sm:col-span-2' : 'min-w-0'}>
       <label htmlFor={id} className="block text-sm font-medium text-brand-ink">
-        {campo.etiqueta}{campo.obligatorio && <span aria-hidden="true" className="text-rose-600"> *</span>}
+        {t(campo.etiqueta)}{campo.obligatorio && <span aria-hidden="true" className="text-rose-600"> *</span>}
       </label>
       <input
         id={id}
+        ref={referencia}
         name={campo.nombre}
         type={campo.tipo ?? 'text'}
         autoComplete={campo.autoComplete}
         required={campo.obligatorio}
-        placeholder={campo.placeholder}
+        placeholder={campo.placeholder ? t(campo.placeholder) : undefined}
         maxLength={campo.maxLength}
+        inputMode={campo.nombre === 'codigoPostal' ? 'numeric' : undefined}
+        aria-invalid={errorCampo ? true : undefined}
+        aria-describedby={errorCampo ? `${id}-error` : undefined}
+        onBlur={(event) => comprobar(event.currentTarget)}
+        onChange={(event) => comprobar(event.currentTarget)}
         className={estiloCampo}
       />
+      {errorCampo && <p id={`${id}-error`} className="mt-2 text-xs text-rose-700">{t(errorCampo)}</p>}
     </div>
   );
 }
@@ -70,12 +94,24 @@ function CampoFormulario({ campo }: { campo: Campo }) {
  * @returns Formulario con catálogos validados, errores recuperables o confirmación del código generado.
  */
 export function FormularioQueja() {
+  const { t } = useIdioma();
   const [catalogo, setCatalogo] = useState<CatalogoLineas>({ estado: 'cargando' });
   const [catalogoPoblaciones, setCatalogoPoblaciones] = useState<CatalogoPoblaciones>({ estado: 'cargando' });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creada, setCreada] = useState<QuejaCreada | null>(null);
   const bloqueoEnvio = useRef(false);
+  const referenciaFormulario = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    for (const entrada of Array.from(referenciaFormulario.current?.elements ?? [])) {
+      if ((entrada instanceof HTMLInputElement || entrada instanceof HTMLSelectElement || entrada instanceof HTMLTextAreaElement)
+        && entrada.validity.customError) {
+        const mensaje = errorControlQueja(entrada);
+        entrada.setCustomValidity(mensaje ? t(mensaje) : '');
+      }
+    }
+  }, [t]);
 
   // Cancela la lectura del catálogo al desmontar y limita su duración.
   useEffect(() => {
@@ -142,7 +178,7 @@ export function FormularioQueja() {
   }, []);
 
   /**
-   * Convierte fecha del calendario e ids de opciones y envía JSON sin conservar datos personales al confirmar.
+   * Valida los controles, convierte fecha e ids y envía JSON sin conservar datos personales al confirmar.
    * @param event Envío nativo, cancelado para controlar la petición y la respuesta.
    * @returns Promesa que termina mostrando el código creado o un error, sin reenvíos automáticos.
    */
@@ -151,6 +187,13 @@ export function FormularioQueja() {
     if (bloqueoEnvio.current || creada !== null) return;
     setError(null);
     const form = event.currentTarget;
+    for (const entrada of Array.from(form.elements)) {
+      if (entrada instanceof HTMLInputElement || entrada instanceof HTMLSelectElement || entrada instanceof HTMLTextAreaElement) {
+        const mensaje = errorControlQueja(entrada);
+        entrada.setCustomValidity(mensaje ? t(mensaje) : '');
+      }
+    }
+    if (!form.reportValidity()) return;
     const data = new FormData(form);
     const payload: Record<string, string | number | null> = {};
     for (const [nombre, valor] of data.entries()) {
@@ -188,7 +231,8 @@ export function FormularioQueja() {
         body: JSON.stringify(payload), cache: 'no-store', signal: AbortSignal.timeout(30000),
       });
       if (response.status === 400) {
-        setError('Revisa los campos, la fecha y las opciones seleccionadas.');
+        const detalle: unknown = await response.json().catch(() => null);
+        setError(errorApiQueja(detalle));
         return;
       }
       if (response.status !== 201) throw new Error('No se ha confirmado el alta.');
@@ -213,12 +257,12 @@ export function FormularioQueja() {
   if (creada !== null) {
     return (
       <section role="status" className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-xl font-semibold text-emerald-800">Tu queja se ha registrado</h2>
-        <p className="mt-4 text-brand-ink">Código de incidencia: <strong className="break-all">{creada.codigoIncidencia}</strong></p>
-        <p className="mt-2 text-sm text-brand-gray">Estado: {creada.estado}. Conserva el código para consultar tu incidencia.</p>
+        <h2 className="text-xl font-semibold text-emerald-800">{t("Tu queja se ha registrado")}</h2>
+        <p className="mt-4 text-brand-ink">{t('Código de incidencia')}: <strong className="break-all">{creada.codigoIncidencia}</strong></p>
+        <p className="mt-2 text-sm text-brand-gray">{t('Estado')}: {t(creada.estado)}. {t('Conserva el código para consultar tu incidencia.')}</p>
         <div className="mt-6 flex flex-wrap gap-4 text-sm font-medium">
-          <Link href="/" className="brand-link">Consultar una incidencia</Link>
-          <button type="button" onClick={nuevaQueja} className="brand-link">Crear otra queja</button>
+          <Link href="/" className="brand-link">{t("Consultar una incidencia")}</Link>
+          <button type="button" onClick={nuevaQueja} className="brand-link">{t("Crear otra queja")}</button>
         </div>
       </section>
     );
@@ -234,52 +278,52 @@ export function FormularioQueja() {
       : poblaciones.length === 0 ? 'No hay poblaciones disponibles' : 'Sin especificar';
 
   return (
-    <form method="post" onSubmit={enviarQueja} aria-busy={enviando} className="space-y-8">
-      <p className="text-sm text-brand-gray">Los campos marcados con un asterisco (*) son obligatorios.</p>
+    <form ref={referenciaFormulario} method="post" noValidate onSubmit={enviarQueja} aria-busy={enviando} className="space-y-8">
+      <p className="text-sm text-brand-gray">{t("Los campos marcados con un asterisco (*) son obligatorios.")}</p>
 
       <fieldset disabled={enviando} className="surface-card p-6 sm:p-8">
-        <legend className="rounded-lg bg-brand-soft px-3 py-1 text-sm font-bold text-brand-ink">Datos personales</legend>
+        <legend className="rounded-lg bg-brand-soft px-3 py-1 text-sm font-bold text-brand-ink">{t("Datos personales")}</legend>
         <div className="grid gap-6 sm:grid-cols-2">
           {camposPersonales.map((campo) => <CampoFormulario key={campo.nombre} campo={campo} />)}
         </div>
       </fieldset>
 
       <fieldset disabled={enviando} className="surface-card p-6 sm:p-8">
-        <legend className="rounded-lg bg-brand-soft px-3 py-1 text-sm font-bold text-brand-ink">Datos del suceso</legend>
+        <legend className="rounded-lg bg-brand-soft px-3 py-1 text-sm font-bold text-brand-ink">{t("Datos del suceso")}</legend>
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="min-w-0">
             <label htmlFor="queja-fecha" className="block text-sm font-medium text-brand-ink">
-              Fecha<span aria-hidden="true" className="text-rose-600"> *</span>
+              {t("Fecha")}<span aria-hidden="true" className="text-rose-600"> *</span>
             </label>
             <input id="queja-fecha" name="fecha" type="date" required min="1000-01-01" max="9999-12-31" aria-describedby="queja-fecha-formato" className={estiloCampo} />
-            <p id="queja-fecha-formato" className="mt-2 text-xs text-brand-gray">Selecciona la fecha del suceso en el calendario.</p>
+            <p id="queja-fecha-formato" className="mt-2 text-xs text-brand-gray">{t("Selecciona la fecha del suceso en el calendario.")}</p>
           </div>
           <CampoFormulario campo={{ nombre: 'hora', etiqueta: 'Hora', tipo: 'time', obligatorio: true }} />
           <div className="min-w-0">
             <label htmlFor="queja-linea" className="block text-sm font-medium text-brand-ink">
-              Línea<span aria-hidden="true" className="text-rose-600"> *</span>
+              {t("Línea")}<span aria-hidden="true" className="text-rose-600"> *</span>
             </label>
             <select id="queja-linea" name="linea" required defaultValue="" disabled={catalogo.estado !== 'disponible' || lineas.length === 0} aria-busy={catalogo.estado === 'cargando'} aria-describedby="queja-linea-ayuda" className={estiloCampo}>
-              <option value="" disabled>{textoOpcion}</option>
+              <option value="" disabled>{t(textoOpcion)}</option>
               {lineas.map((linea) => <option key={linea.id_linea_amb} value={linea.id_linea_amb}>{linea.nom_linea_tusgsal.trim()}</option>)}
             </select>
             <p id="queja-linea-ayuda" role="status" className={catalogo.estado === 'error' ? 'mt-2 text-xs text-rose-700' : 'mt-2 text-xs text-brand-gray'}>
-              {catalogo.estado === 'error' ? 'No se han podido cargar las líneas. Inténtalo de nuevo más tarde.'
+              {t(catalogo.estado === 'error' ? 'No se han podido cargar las líneas. Inténtalo de nuevo más tarde.'
                 : catalogo.estado === 'cargando' ? 'Cargando el catálogo de líneas.'
-                  : lineas.length === 0 ? 'No hay líneas disponibles para seleccionar.' : 'Selecciona la línea en la que ocurrió el suceso.'}
+                  : lineas.length === 0 ? 'No hay líneas disponibles para seleccionar.' : 'Selecciona la línea en la que ocurrió el suceso.')}
             </p>
           </div>
           <CampoFormulario campo={{ nombre: 'numeroVehiculo', etiqueta: 'Núm. vehículo', placeholder: 'Número del autobús', maxLength: 45 }} />
           <div className="min-w-0">
-            <label htmlFor="queja-zona" className="block text-sm font-medium text-brand-ink">Población</label>
+            <label htmlFor="queja-zona" className="block text-sm font-medium text-brand-ink">{t("Población")}</label>
             <select id="queja-zona" name="zona" defaultValue="" disabled={catalogoPoblaciones.estado !== 'disponible' || poblaciones.length === 0} aria-busy={catalogoPoblaciones.estado === 'cargando'} aria-describedby="queja-zona-ayuda" className={estiloCampo}>
-              <option value="">{textoPoblacion}</option>
+              <option value="">{t(textoPoblacion)}</option>
               {poblaciones.map((poblacion) => <option key={poblacion.id_m_zona} value={poblacion.id_m_zona}>{poblacion.poblacion.trim()}</option>)}
             </select>
             <p id="queja-zona-ayuda" role="status" className={catalogoPoblaciones.estado === 'error' ? 'mt-2 text-xs text-rose-700' : 'mt-2 text-xs text-brand-gray'}>
-              {catalogoPoblaciones.estado === 'cargando' ? 'Cargando el catálogo de poblaciones.'
+              {t(catalogoPoblaciones.estado === 'cargando' ? 'Cargando el catálogo de poblaciones.'
                 : catalogoPoblaciones.estado === 'error' ? 'No se han podido cargar las poblaciones. Puedes enviar la queja sin especificarla.'
-                  : poblaciones.length === 0 ? 'No hay poblaciones disponibles. Puedes enviar la queja sin especificarla.' : 'Opcional. Selecciona la población donde ocurrió el suceso.'}
+                  : poblaciones.length === 0 ? 'No hay poblaciones disponibles. Puedes enviar la queja sin especificarla.' : 'Opcional. Selecciona la población donde ocurrió el suceso.')}
             </p>
           </div>
           <CampoFormulario campo={{ nombre: 'lugar', etiqueta: 'Lugar', placeholder: 'Lugar de los hechos', maxLength: 1000 }} />
@@ -289,16 +333,16 @@ export function FormularioQueja() {
       </fieldset>
 
       <fieldset disabled={enviando} className="surface-card p-6 sm:p-8">
-        <legend className="rounded-lg bg-brand-soft px-3 py-1 text-sm font-bold text-brand-ink">Tu reclamación</legend>
-        <label htmlFor="queja-motivo" className="block text-sm font-medium text-brand-ink">Motivo de reclamación</label>
-        <textarea id="queja-motivo" name="motivo" rows={6} maxLength={20000} placeholder="Describe qué ha ocurrido." className={estiloCampo} />
+        <legend className="rounded-lg bg-brand-soft px-3 py-1 text-sm font-bold text-brand-ink">{t("Tu reclamación")}</legend>
+        <label htmlFor="queja-motivo" className="block text-sm font-medium text-brand-ink">{t("Motivo de reclamación")}</label>
+        <textarea id="queja-motivo" name="motivo" rows={6} maxLength={20000} placeholder={t("Describe qué ha ocurrido.")} className={estiloCampo} />
       </fieldset>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-brand-gray">Recibirás un código al completar el registro.</p>
-        <button type="submit" disabled={enviando || catalogo.estado !== 'disponible' || lineas.length === 0} className="button-primary">{enviando ? 'Enviando…' : 'Enviar incidencia'}</button>
+        <p className="text-sm text-brand-gray">{t("Recibirás un código al completar el registro.")}</p>
+        <button type="submit" disabled={enviando || catalogo.estado !== 'disponible' || lineas.length === 0} className="button-primary">{t(enviando ? 'Enviando…' : 'Enviar incidencia')}</button>
       </div>
-      <div aria-live="polite">{error && <p role="alert" className="text-sm text-rose-700">{error}</p>}</div>
+      <div aria-live="polite">{error && <p role="alert" className="text-sm text-rose-700">{t(error)}</p>}</div>
     </form>
   );
 }

@@ -1,5 +1,14 @@
 # Referencias oficiales
 
+Multiidioma, consultada el 20 de noviembre de 2026:
+
+- [Next.js App Router: internacionalización y diccionarios de traducciones](https://nextjs.org/docs/app/guides/internationalization). Se mantiene el enrutado actual del proyecto y se selecciona idioma mediante cookie/cabeceras, sin prefijos de idioma.
+
+Validaciones del formulario, consultadas el 19 de noviembre de 2026:
+
+- [Ministerio del Interior: cálculo del dígito de control del NIF/NIE](https://www.interior.gob.es/opencms/gl/servicios-al-ciudadano/tramites-y-gestiones/dni/calculo-del-digito-de-control-del-nif-nie/).
+- [BOE: código postal de cinco dígitos](https://www.boe.es/buscar/act.php?id=BOE-A-1982-19813).
+
 PM2, consultadas el 13 de noviembre de 2026:
 
 - [PM2: ecosystem, cwd, entorno y argumentos de Node](https://pm2.keymetrics.io/docs/usage/application-declaration/).

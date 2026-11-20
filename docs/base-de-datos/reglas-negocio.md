@@ -1,5 +1,9 @@
 # Reglas de la consulta provisional
 
+## Respuestas visibles — 19 de noviembre de 2026
+
+La nueva petición autoriza leer y mostrar `crm_respuesta.respuesta` por `id_incidencia`, solo tras validar la pareja de consulta. La existencia de una fila inicial vacía no cuenta como respuesta. Se muestran todos los textos no vacíos, ordenados por `id_respuesta ASC`, sin inferir un estado final ni elegir una respuesta vigente. No se publican `observaciones`. El texto se recorta en los extremos y conserva saltos de línea, sin interpretar HTML. El apartado aparece debajo del detalle, con borde y fondo verdes, únicamente si la lista tiene contenido. No se modifica el criterio de estado mostrado desde expedientes. La API añade `respuestas` (31 propiedades); las cifras y campos anteriores describen el contrato previo.
+
 Confirmadas por la petición del usuario el **23 de octubre de 2026**:
 
 1. El código de incidencia corresponde a `crm_incidencia.id`.
@@ -16,6 +20,8 @@ La entrada exige un entero positivo hasta 2147483647 o su representación de uno
 La comparación de código e identificador es el criterio de acceso provisional de esta pantalla local. No constituye una sesión de usuario del CRM ni permisos generales del backoffice. No se deducen reglas de autenticación, estados válidos o reglas de escritura sobre los registros originales. La petición del **28 de octubre de 2026** autoriza únicamente añadir el registro de cada consulta en la nueva tabla de logs, según [logs-consultas.md](logs-consultas.md): `Valida` es 1 con incidencia y 0 sin ella, y se espera la confirmación del log antes de responder.
 
 ## Alta de quejas autorizada el 30 de octubre de 2026
+
+La revisión del **19 de noviembre de 2026** limita el documento del formulario a DNI/NIE español con letra de control y lo guarda en mayúsculas. Sigue siendo obligatorio según la modificación previa del usuario. CP opcional de cinco cifras de España (01–52); dirección y teléfono opcionales con comprobación de sintaxis. No cambia la correspondencia de columnas ni la transacción y no reescribe datos históricos. Reglas en [formulario-queja.md](../formulario-queja.md#validaciones-revisadas--19-de-noviembre-de-2026).
 
 La aclaración del **17 de noviembre de 2026** cambia únicamente la capitalización del estado inicial de respuesta a `Pendiente`. `estado2` conserva `abierta` y el expediente conserva `Pendiente`. Se aplica a nuevas altas; no se ejecutan actualizaciones sobre respuestas históricas. Las referencias a `pendiente` en la petición original describen el valor anterior.
 

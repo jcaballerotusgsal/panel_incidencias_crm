@@ -11,7 +11,7 @@ export class QuejasService {
   constructor(private readonly repository: QuejasRepository) {}
 
   /**
-   * Recibe una queja validada y fija los datos de recepción desde el reloj del servidor.
+   * Recibe una queja validada, normaliza las letras del documento y fija la recepción desde el servidor.
    * @param formulario Entrada validada; lugar precede al motivo en el detalle y zona identifica la población.
    * @returns Código generado y estado inicial sin devolver datos personales.
    * @throws BadRequestException si línea o población no están disponibles; ServiceUnavailableException si falla el alta.
@@ -25,7 +25,7 @@ export class QuejasService {
       : formulario.motivo || null;
     const datos: NuevaQueja = {
       nombre: formulario.nombre, apellidos: formulario.apellidos,
-      dni: formulario.dni, telefono: formulario.telefono, correo: formulario.correo,
+      dni: formulario.dni.toUpperCase(), telefono: formulario.telefono, correo: formulario.correo,
       direccionPostal, fecha: formulario.fecha, hora: formulario.hora, linea: formulario.linea,
       zona: formulario.zona ?? null,
       numeroVehiculo: formulario.numeroVehiculo, parada: formulario.parada, sentido: formulario.sentido,

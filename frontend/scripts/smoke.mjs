@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 
 const origin = process.env.SMOKE_ORIGIN ?? 'http://127.0.0.1:3000';
 
-/** Descarga un recurso y falla ante HTTP no exitoso o un timeout. */
+/** Descarga un recurso con español explícito y falla ante HTTP no exitoso o un timeout. */
 async function get(path) {
   const response = await fetch(new URL(path, origin), {
+    headers: { 'Accept-Language': 'es' },
     signal: AbortSignal.timeout(30000),
   });
   assert.equal(response.status, 200, `Error en ${path}: HTTP ${response.status}`);
@@ -30,7 +31,7 @@ async function run() {
   assert.ok(html.includes('name="codigoIncidencia"'));
   assert.ok(html.includes('name="identificador"'));
   const queja = await (await get('/quejas/nueva')).text();
-  assert.ok(queja.includes('Crear una queja'));
+  assert.ok(queja.includes('Crear una incidencia'));
   for (const campo of ['nombre', 'apellidos', 'direccion', 'codigoPostal', 'telefono', 'correo', 'dni', 'fecha', 'hora', 'linea', 'zona', 'numeroVehiculo', 'lugar', 'parada', 'sentido', 'motivo']) {
     assert.ok(queja.includes(`name="${campo}"`), `Falta el campo ${campo} de la queja`);
   }

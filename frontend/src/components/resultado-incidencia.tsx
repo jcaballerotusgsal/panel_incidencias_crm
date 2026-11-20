@@ -1,7 +1,10 @@
 'use client';
 
+import { useIdioma } from './idioma-context';
+
 import Link from 'next/link';
 import type { Incidencia } from '@/lib/incidencias';
+import { traducirEstado, type Traducir } from '@/lib/i18n';
 import { useConsultaIncidencia } from './consulta-incidencia-context';
 
 type CampoResultado = {
@@ -62,17 +65,18 @@ const grupos: readonly GrupoResultado[] = [
 /**
  * Prepara columnas y estados para su lectura sin interpretar HTML ni convertir zonas horarias.
  * @param valor Columna validada de la API; puede faltar o estar vacía.
+ * @param t Traductor de etiquetas y ausencias; no traduce datos personales o texto libre.
  * @param fecha Si debe presentar una fecha MySQL como día/mes/año, conservando su hora.
  * @returns Texto legible, estados distintos o «Sin expediente» para listas vacías; conserva cero y nulos.
  */
-function mostrarValor(valor: Incidencia[string] | undefined, fecha = false): string {
+function mostrarValor(valor: Incidencia[string] | undefined, t: Traducir, fecha = false): string {
   if (Array.isArray(valor)) {
-    if (valor.length === 0) return 'Sin expediente';
+    if (valor.length === 0) return t('Sin expediente');
     // Se presentan todos los estados distintos, sin deducir cuál es el estado vigente de la incidencia.
-    return [...new Set(valor.map((estado) => mostrarValor(estado)))].join(' · ');
+    return [...new Set(valor.map((estado) => estado?.trim() ? traducirEstado(estado, t) : t('No informado')))].join(' · ');
   }
   if (valor === null || valor === undefined || (typeof valor === 'string' && !valor.trim())) {
-    return 'No informado';
+    return t('No informado');
   }
   if (fecha && typeof valor === 'string') {
     const partes = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}(?::\d{2})?))?$/.exec(valor);
@@ -84,10 +88,11 @@ function mostrarValor(valor: Incidencia[string] | undefined, fecha = false): str
 }
 
 /**
- * Presenta una ficha con los campos visibles acordados y los estados sin resultado.
+ * Presenta la ficha y, si existen, respuestas del CRM como texto en un recuadro verde bajo el detalle.
  * @returns Vista adaptable, con valores como texto; al recargar requiere consultar de nuevo.
  */
 export function ResultadoIncidencia() {
+  const { t } = useIdioma();
   const { resultado, setResultado } = useConsultaIncidencia();
 
   /** Borra los datos personales en memoria cuando se inicia otra consulta. */
@@ -99,7 +104,7 @@ export function ResultadoIncidencia() {
     <section aria-labelledby="resultado-titulo" className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 id="resultado-titulo" className="text-2xl font-semibold tracking-tight text-brand-ink">
-          Resultado de la consulta
+          {t("Resultado de la consulta")}
         </h1>
         <Link
           href="/"
@@ -107,7 +112,7 @@ export function ResultadoIncidencia() {
           className="button-secondary"
         >
           <span aria-hidden="true">←</span>
-          Volver al formulario
+          {t("Volver al formulario")}
         </Link>
       </div>
       {resultado?.estado === 'encontrada' && (
@@ -117,34 +122,48 @@ export function ResultadoIncidencia() {
               <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="size-4">
                 <path d="m5 10 3 3 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              Consulta completada
+              {t("Consulta completada")}
             </span>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Incidencia #{resultado.incidencia.id}
+              {t('Incidencia')} #{resultado.incidencia.id}
             </h2>
-            <p className="mt-3 text-sm leading-6 text-white/85">Información de la incidencia consultada.</p>
+            <p className="mt-3 text-sm leading-6 text-white/85">{t("Información de la incidencia consultada.")}</p>
           </div>
 
           <section aria-labelledby="detalle-titulo" className="rounded-2xl border border-line bg-white p-6 shadow-sm sm:p-8">
-            <h3 id="detalle-titulo" className="text-lg font-semibold text-brand-ink">Detalle de la incidencia</h3>
+            <h3 id="detalle-titulo" className="text-lg font-semibold text-brand-ink">{t("Detalle de la incidencia")}</h3>
             <p className="mt-4 whitespace-pre-wrap break-words rounded-xl border border-brand-yellow/30 bg-brand-soft p-5 text-sm leading-7 text-brand-ink">
-              {mostrarValor(resultado.incidencia.m_detalle)}
+              {mostrarValor(resultado.incidencia.m_detalle, t)}
             </p>
           </section>
 
+          {resultado.incidencia.respuestas.length > 0 && (
+            <section aria-labelledby="respuesta-titulo" className="rounded-2xl border border-line bg-white p-6 shadow-sm sm:p-8">
+              <h3 id="respuesta-titulo" className="text-lg font-semibold text-brand-ink">{t("Respuesta a la incidencia")}</h3>
+              <div className="mt-4 space-y-4 rounded-xl border border-green-600/30 bg-green-50 p-5 text-sm leading-7 text-brand-ink">
+                {resultado.incidencia.respuestas.map((respuesta, indice) => (
+                  <p key={indice} className="whitespace-pre-wrap break-words">{respuesta}</p>
+                ))}
+              </div>
+            </section>
+          )}
+
           <div className="grid gap-6 md:grid-cols-2">
             {grupos.map((grupo) => (
-              <section key={grupo.titulo} aria-label={grupo.titulo} className="min-w-0 rounded-2xl border border-line bg-white p-6 shadow-sm">
+              <section key={grupo.titulo} aria-label={t(grupo.titulo)} className="min-w-0 rounded-2xl border border-line bg-white p-6 shadow-sm">
                 <h3 className="flex items-center gap-3 text-base font-semibold text-brand-ink">
                   <span aria-hidden="true" className="h-5 w-1 rounded-full bg-brand-yellow" />
-                  {grupo.titulo}
+                  {t(grupo.titulo)}
                 </h3>
                 <dl className="mt-5 grid gap-x-6 gap-y-5 sm:grid-cols-2">
                   {grupo.campos.map((campo) => (
                     <div key={campo.campo} className={campo.anchoCompleto ? 'min-w-0 sm:col-span-2' : 'min-w-0'}>
-                      <dt className="text-xs font-medium text-brand-gray">{campo.etiqueta}</dt>
+                      <dt className="text-xs font-medium text-brand-gray">{t(campo.etiqueta)}</dt>
                       <dd className="mt-1.5 whitespace-pre-wrap break-words text-sm font-medium leading-6 text-brand-ink">
-                        {mostrarValor(resultado.incidencia[campo.campo], campo.fecha)}
+                        {(campo.campo === 'm_tipo' && resultado.incidencia.m_tipo === 'Queja')
+                          || (campo.campo === 'via_recepcion' && resultado.incidencia.via_recepcion === 'formulario web')
+                          ? t(mostrarValor(resultado.incidencia[campo.campo], t, campo.fecha))
+                          : mostrarValor(resultado.incidencia[campo.campo], t, campo.fecha)}
                       </dd>
                     </div>
                   ))}
@@ -156,12 +175,12 @@ export function ResultadoIncidencia() {
       )}
       {resultado?.estado === 'no-encontrada' && (
         <div className="rounded-2xl border border-line bg-white p-8 text-center shadow-sm">
-          <p role="status" className="text-brand-gray">No se han encontrado los datos.</p>
+          <p role="status" className="text-brand-gray">{t("No se han encontrado los datos.")}</p>
         </div>
       )}
       {resultado === null && (
         <div className="rounded-2xl border border-line bg-white p-8 text-center shadow-sm">
-          <p className="text-brand-gray">Realiza una consulta desde el formulario para ver el resultado.</p>
+          <p className="text-brand-gray">{t("Realiza una consulta desde el formulario para ver el resultado.")}</p>
         </div>
       )}
     </section>

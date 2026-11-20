@@ -1,5 +1,35 @@
 # Validación de la entrega
 
+## Multiidioma de la web — 20 de noviembre de 2026
+
+Para preparar la integración en `main` se repiten las 13 pruebas de idioma, tipos y lint sobre los textos y selector finales. Se compila el frontend en un contenedor temporal Node 24.22.3 sin red. Esta entrega promueve también la ficha con respuestas y las validaciones ya verificadas en `develop`; el despliegue del servidor debe actualizar frontend y backend. No se requiere SQL adicional ni se aplica el despliegue remoto desde esta sesión.
+
+Por petición posterior, el desplegable se sustituye por botones con banderas SVG y nombres, con estado `aria-pressed` y resaltado amarillo. Se comprueba específicamente el selector por clic y teclado, conservación del código escrito, recuerdo tras recargar y ausencia de desbordamiento en móvil. El cambio es de presentación; conserva el contexto y cookie del multiidioma.
+
+Rama `feat/multiidioma-ca-es-en`, desde `develop` tras integrar las validaciones (`2a20091`). Se incorporan 134 claves en los diccionarios ca/es/en, selector de idioma, cookie de preferencia, detección por navegador y catalán como alternativa. El servidor entrega `lang`, título y descripción traducidos; el cliente actualiza idioma/título sin navegar ni remontar formularios/resultado. Se traducen navegación, consulta, alta, ficha, controles y errores conocidos, sin traducir texto libre del CRM. El enlace de alta en la portada se corrige a la ruta existente `/quejas/nueva`.
+
+Comprobaciones: `npm run test:i18n` pasa 13 pruebas de claves, preferencias regionales/pesos, cookie inválida, alternativa y estados desconocidos. Tipos correctos; lint sin errores salvo el aviso previo de exportación anónima en `postcss.config.mjs`. Se compiló Next.js 16.4.1 con Node 24 en un contenedor temporal sin red ni variables de conexión al CRM, manteniendo el frontend local activo; la salida usa renderizado por petición. No se añaden dependencias: el manifiesto solo incorpora el comando de pruebas y no cambia el lockfile.
+
+Edge con APIs de negocio interceptadas comprobó HTML inicial en inglés, cambio a catalán/español/inglés, cookie tras recarga, idioma alternativo para navegador francés, metadatos, conservación de campos/fecha/línea y resultado, corrección/traducción de errores de DNI, 400 genérico localizado, confirmación, 404, estados conocidos/desconocidos, texto original de detalle/respuesta y móvil sin desbordamiento ni errores de página. La captura provisional está en `.local/browser/multiidioma-ca.png`. Se adaptó el selector de alerta de la prueba para distinguirlo del anunciador accesible de rutas de Next.js.
+
+No se han enviado correos, creado quejas ni consultado datos reales. No se modifican backend, tablas, triggers, `dp_idioma` o contrato API. El smoke general solicita español explícito y corrige el texto del título actual, pero no se ejecuta contra el CRM configurado porque genera un log. Correos por idioma y persistencia de idioma en la queja quedan para una fase posterior. Guía de edición/despliegue en [multiidioma.md](multiidioma.md).
+
+## Validación del formulario — 19 de noviembre de 2026
+
+La ficha con respuestas se guarda en `e5b1e9e` y se integra/publica en `develop` mediante `df582a7`. La nueva rama `feat/validaciones-formulario-quejas` incorpora las comprobaciones confirmadas por el usuario: DNI/NIE españoles con letra de control y CP de España. Se añaden comprobaciones de nombres, teléfono y dirección, sin cambiar los opcionales. Se normaliza a mayúsculas el documento al preparar el alta y se corrige Swagger y las pruebas que aún lo describían opcional.
+
+Tipos y compilación backend correctos; pasaron 123 pruebas de alta/repositorio y después la suite completa del backend (255 pruebas), con datos sintéticos y proveedores simulados. Tipos frontend correctos y lint sin errores, con el aviso previo de exportación anónima en `postcss.config.mjs`. Edge comprobó DNI/NIE, correo, nombres, CP, teléfono, dirección, corrección de mensajes accesibles, ausencia de POST con campos inválidos y envío válido interceptado en móvil. No se crearon quejas ni se enviaron correos reales. No se ejecutó el smoke que crea logs en el CRM configurado. Se reinicia backend tras compilar para evitar servir procesos antiguos con `EADDRINUSE`. No se modifica el esquema ni se revalidan registros históricos.
+
+## Respuesta bajo el detalle — 19 de noviembre de 2026
+
+Tras la comprobación inicial, el usuario detectó fallos de consulta local. Los logs del backend mostraban `EADDRINUSE` en 3001 tras recompilar con el watcher activo, situación prevista en `docker.md`: el proceso nuevo no llegaba a sustituir al anterior. Se reinició únicamente `backend` (el consumidor de correo estaba detenido); la salud a través de Next.js volvió a HTTP 200 con uptime reiniciado. Esta comprobación no consultó registros ni creó logs de incidencias. Se recomienda repetir la consulta en el navegador tras el reinicio para verificar la pareja real usada por el usuario.
+
+Rama `feat/respuesta-incidencia-detalle` desde `develop`. El repositorio lee solo `crm_respuesta.respuesta` por incidencia después de validar credenciales y añade `respuestas: string[]`, sin textos vacíos ni datos de observaciones. La interfaz muestra una sección verde bajo el detalle únicamente con respuestas. Se conserva texto y saltos de línea sin interpretar HTML; varias respuestas no multiplican la incidencia.
+
+Comprobaciones ejecutadas: tipos y compilación backend; 52 pruebas sintéticas de incidencias correctas, incluidas respuestas vacías/múltiples, SQL parametrizado, ausencia de lectura sin acceso y fallo 503 sin resultado parcial. Tipos frontend y lint correctos, salvo el aviso previo de exportación anónima en `postcss.config.mjs`. Edge con API interceptada verificó sección ausente/presente, posición, varias respuestas, escape HTML, móvil sin desbordamiento y rechazo de contratos inválidos (lista ausente, escalar, null, número o texto vacío). Captura provisional en `.local/browser/respuesta-incidencia.png`.
+
+No se accedió a registros reales del CRM ni se ejecutó el smoke que genera logs en la base configurada. No se alteraron tablas ni permisos; el usuario SQL del backend requiere SELECT en `crm_respuesta.respuesta` e identificadores usados para filtrar/ordenar. Pendiente comprobar el esquema y el acceso en el servidor. El contrato exige desplegar frontend y backend juntos; no requiere SQL de migración ni cambios en el consumidor de correo.
+
 ## HTML interno y presentación de estados — 17 de noviembre de 2026
 
 En `feat/correo-cambio-estado-crm`, solicitante e interno utilizan el mismo archivo `usuario.html`. Graph recibe HTML en ambos casos; SMTP conserva HTML y texto alternativo. Una plantilla inválida produce un fallo reintentable para ambos destinatarios. El estado anterior se presenta rojo y normal, y el nuevo verde y en negrita en cambios de estado. El alta inserta `crm_respuesta.estado = 'Pendiente'`, sin reescribir filas anteriores.

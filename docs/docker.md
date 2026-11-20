@@ -191,6 +191,8 @@ En las imágenes compiladas, la copia ya forma parte del build de NestJS y del `
 
 ## Antes de publicar
 
+Para la web multiidioma se añade `docker compose exec -T frontend npm run test:i18n`, sin conexión a datos. El smoke general solicita español explícitamente; sigue generando un log sintético al comprobar el 404 y requiere una copia autorizada. No se necesita instalar dependencias nuevas para los idiomas. El layout se sirve por petición mediante Next.js; no se utiliza exportación estática. Véase [multiidioma.md](multiidioma.md).
+
 Añade un proxy inverso con HTTPS y los controles de acceso de la aplicación. Los nombres «production» de los targets indican compilación optimizada, no una garantía de seguridad ni de disponibilidad empresarial.
 
 No publiques los watchers ni Swagger sin control. Define límites de recursos, monitorización, estrategia de secretos y copia de seguridad de las futuras bases de datos. Fija versiones/digests para una entrega reproducible y establece un proceso para actualizarlos.

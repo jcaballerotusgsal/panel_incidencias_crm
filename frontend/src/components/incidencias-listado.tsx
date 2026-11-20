@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useIdioma } from './idioma-context';
+import { traducirEstado } from '@/lib/i18n';
 
 export type Incidencia = {
     id: number;
@@ -12,14 +14,15 @@ type Props = {
     incidencias: readonly Incidencia[];
 };
 
-/** Muestra las incidencias recibidas y permite filtrarlas por título. */
+/** Muestra los datos recibidos sin traducir sus títulos; localiza controles/estados y conserva el filtro al cambiar idioma. */
 export function IncidenciasListado({ incidencias }: Props) {
+    const { t, idioma } = useIdioma();
     const [busqueda, setBusqueda] = useState("");
 
-    const filtro = busqueda.trim().toLocaleLowerCase("es");
+    const filtro = busqueda.trim().toLocaleLowerCase(idioma);
 
     const visibles = incidencias.filter((incidencia) =>
-        incidencia.titulo.toLocaleLowerCase("es").includes(filtro),
+        incidencia.titulo.toLocaleLowerCase(idioma).includes(filtro),
     );
 
     return (
@@ -28,7 +31,7 @@ export function IncidenciasListado({ incidencias }: Props) {
                 htmlFor="buscar-incidencias"
                 className="block text-sm font-medium text-brand-ink"
             >
-                Buscar por título
+                {t('Buscar por título')}
             </label>
 
             <input
@@ -36,12 +39,12 @@ export function IncidenciasListado({ incidencias }: Props) {
                 type="search"
                 value={busqueda}
                 onChange={(event) => setBusqueda(event.target.value)}
-                placeholder="Por ejemplo: impresora"
+                placeholder={t('Por ejemplo: impresora')}
                 className="mt-2 w-full rounded-lg border border-line bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-brand-gray"
             />
 
             <p aria-live="polite" className="mt-3 text-sm text-brand-gray">
-                Resultados: {visibles.length}
+                {t('Resultados')}: {visibles.length}
             </p>
 
             <ul className="mt-4 space-y-3">
@@ -55,7 +58,7 @@ export function IncidenciasListado({ incidencias }: Props) {
                         </span>
 
                         <span className="rounded-full bg-canvas px-3 py-1 text-sm">
-                            {incidencia.estado}
+                            {traducirEstado(incidencia.estado, t)}
                         </span>
                     </li>
                 ))}
@@ -63,7 +66,7 @@ export function IncidenciasListado({ incidencias }: Props) {
 
             {visibles.length === 0 && (
                 <p className="mt-4 text-brand-gray">
-                    No hay incidencias que coincidan con la búsqueda.
+                    {t('No hay incidencias que coincidan con la búsqueda.')}
                 </p>
             )}
         </section>
