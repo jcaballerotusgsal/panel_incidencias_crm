@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Texto } from '@/components/idioma-context';
 import { Header, Footer } from "@/components/plant";
 
 import {
@@ -31,15 +32,15 @@ export default function IncidenciasPage() {
         <Header />
         <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
             <Link href="/" className="brand-link text-sm">
-                Volver al inicio
+                <Texto>Volver al inicio</Texto>
             </Link>
 
             <h1 className="mt-6 text-3xl font-bold text-brand-ink">
-                Incidencias
+                <Texto>Incidencias</Texto>
             </h1>
 
             <p className="mt-2 text-brand-gray">
-                Datos de demostración. Esta pantalla no guarda cambios.
+                <Texto>Datos de demostración. Esta pantalla no guarda cambios.</Texto>
             </p>
 
             <IncidenciasListado incidencias={incidenciasDemo} />

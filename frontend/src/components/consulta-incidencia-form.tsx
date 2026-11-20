@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useIdioma } from './idioma-context';
+
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { isConsultaResponse } from '@/lib/incidencias';
+import { errorControlQueja } from '@/lib/validaciones-queja';
 import { useConsultaIncidencia } from './consulta-incidencia-context';
 
 /**
@@ -10,10 +13,21 @@ import { useConsultaIncidencia } from './consulta-incidencia-context';
  * @returns Formulario con validación de entrada, estado de espera y errores recuperables.
  */
 export function ConsultaIncidenciaForm() {
+  const { t } = useIdioma();
   const router = useRouter();
   const { setResultado } = useConsultaIncidencia();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const referencia = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    for (const entrada of Array.from(referencia.current?.elements ?? [])) {
+      if (entrada instanceof HTMLInputElement && entrada.validity.customError) {
+        const mensaje = errorControlQueja(entrada);
+        entrada.setCustomValidity(mensaje ? t(mensaje) : '');
+      }
+    }
+  }, [t]);
 
   /**
    * Envía los campos originales por POST para consultarlos y registrarlos en el backend.
@@ -23,7 +37,15 @@ export function ConsultaIncidenciaForm() {
   async function consultar(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (pending) return;
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    for (const entrada of Array.from(form.elements)) {
+      if (entrada instanceof HTMLInputElement) {
+        const mensaje = errorControlQueja(entrada);
+        entrada.setCustomValidity(mensaje ? t(mensaje) : '');
+      }
+    }
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
     const codigo = data.get('codigoIncidencia');
     const identificador = data.get('identificador');
     setError(null);
@@ -65,10 +87,10 @@ export function ConsultaIncidenciaForm() {
   }
 
   return (
-    <form method="post" onSubmit={consultar} aria-busy={pending} className="mt-6 space-y-5">
+    <form ref={referencia} method="post" noValidate onSubmit={consultar} aria-busy={pending} className="mt-6 space-y-5">
       <div>
         <label htmlFor="codigo-incidencia" className="block text-sm font-medium">
-          Código de incidencia
+          {t("Código de incidencia")}
         </label>
         <input
           id="codigo-incidencia"
@@ -78,13 +100,13 @@ export function ConsultaIncidenciaForm() {
           pattern="[0-9]+"
           maxLength={10}
           required
-          placeholder="Introduce el código de incidencia"
+          placeholder={t("Introduce el código de incidencia")}
           className="form-input"
         />
       </div>
       <div>
         <label htmlFor="identificador" className="block text-sm font-medium">
-          DNI, correo o código AMB
+          {t("DNI, correo o código AMB")}
         </label>
         <input
           id="identificador"
@@ -92,7 +114,7 @@ export function ConsultaIncidenciaForm() {
           type="text"
           maxLength={45}
           required
-          placeholder="Introduce tu DNI, correo o código AMB"
+          placeholder={t("Introduce tu DNI, correo o código AMB")}
           className="form-input"
         />
       </div>
@@ -101,10 +123,10 @@ export function ConsultaIncidenciaForm() {
         disabled={pending}
         className="button-primary w-full"
       >
-        {pending ? 'Consultando…' : 'Consultar incidencia'}
+        {t(pending ? 'Consultando…' : 'Consultar incidencia')}
       </button>
       <div aria-live="polite">
-        {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
+        {error && <p role="alert" className="text-sm text-rose-700">{t(error)}</p>}
       </div>
     </form>
   );

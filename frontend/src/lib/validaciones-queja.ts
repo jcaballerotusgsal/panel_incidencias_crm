@@ -1,7 +1,7 @@
 /**
  * Valida los campos personales antes de enviar; la API vuelve a comprobar todos los datos.
  * @param campo Nombre del campo del formulario. @param entrada Texto sin normalizar del usuario.
- * @returns Mensaje de corrección o cadena vacía; no comprueba existencia de buzones ni domicilios.
+ * @returns Clave editorial de corrección o cadena vacía; se traduce al presentar sin almacenar datos.
  */
 export function validarCampoQueja(campo: string, entrada: string): string {
   const valor = entrada.trim();
@@ -33,4 +33,30 @@ export function validarCampoQueja(campo: string, entrada: string): string {
     return 'Introduce una dirección con letras o números, sin etiquetas ni saltos de línea (máximo 1000 caracteres).';
   }
   return '';
+}
+
+/**
+ * Unifica los mensajes nativos de controles con el idioma elegido, sin cambiar las reglas de negocio.
+ * @param entrada Control actual, cuya validez personalizada anterior se limpia.
+ * @returns Clave editorial del fallo o cadena vacía; respeta required, tipo, longitudes y rangos HTML.
+ */
+export function errorControlQueja(entrada: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement): string {
+  entrada.setCustomValidity('');
+  const personal = validarCampoQueja(entrada.name, entrada.value);
+  if (personal) return personal;
+  if (entrada.validity.valueMissing) return 'Este campo es obligatorio.';
+  if (entrada.validity.tooLong) return 'El valor es demasiado largo.';
+  return entrada.validity.valid ? '' : 'Revisa el formato de este campo.';
+}
+
+/**
+ * Selecciona un mensaje de servidor traducible sin presentar respuestas externas arbitrarias.
+ * @param detalle JSON de un 400. @returns Clave conocida de catálogo o mensaje general de corrección.
+ */
+export function errorApiQueja(detalle: unknown): string {
+  const general = 'Revisa los campos, la fecha y las opciones seleccionadas.';
+  if (typeof detalle !== 'object' || detalle === null || !('message' in detalle)) return general;
+  const conocidos = ['Selecciona una línea disponible en el catálogo.', 'Selecciona una población disponible en el catálogo.'];
+  const mensajes = Array.isArray(detalle.message) ? detalle.message : [detalle.message];
+  return conocidos.find(mensaje => mensajes.includes(mensaje)) ?? general;
 }

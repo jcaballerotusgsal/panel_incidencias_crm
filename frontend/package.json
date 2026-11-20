@@ -12,7 +12,8 @@
     "start": "next start --hostname 0.0.0.0 --port 3000",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint .",
-    "test:smoke": "node scripts/smoke.mjs"
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:i18n": "node --test scripts/i18n.test.mjs"
   },
   "dependencies": {
     "next": "^16.0.0",
